@@ -28,6 +28,7 @@ Uploading a newer package updates an existing install in place; races, snapshots
 
 - [Admin guide](docs/admin-guide.md): installing, setting up, and what to do when something goes wrong.
 - [Changelog](CHANGELOG.md): what changed in each version.
+- [Tests](tests/README.md): what the automated tests cover and how to run them.
 
 ## What is in this repository
 
@@ -37,6 +38,7 @@ Uploading a newer package updates an existing install in place; races, snapshots
 | `src/plg_task_isorairc` | The scheduled-task plugin that runs the daily import. |
 | `src/pkg_isorairc` | The package that installs both together. |
 | `docs` | The admin guide. |
+| `tests` | The automated tests. |
 | `build.py` | Builds the installable package. |
 
 The extension's internal name is `com_isorairc`, from its first version, which only handled IRC ratings.
@@ -51,12 +53,22 @@ python build.py
 
 This writes `dist/pkg_isorairc.zip`. The `dist` folder is not kept in the repository; each version's build is attached to its release instead.
 
+## Testing
+
+```
+php tests/static.php
+bash tests/run.sh
+```
+
+The first is a quick check of the project's files and runs anywhere. The second builds a throwaway Joomla site, installs the package in it and tests everything; it needs Linux with PHP and MySQL or MariaDB. Both run on GitHub on every push. See [tests/README.md](tests/README.md).
+
 ## Releasing a version
 
 1. Set the new version number in the three manifests: `src/com_isorairc/isorairc.xml`, `src/plg_task_isorairc/isorairc.xml` and `src/pkg_isorairc/pkg_isorairc.xml`.
 2. If the database changes, add `src/com_isorairc/admin/sql/updates/mysql/<version>.sql` with one change per statement, and make the same change in `install.mysql.utf8.sql`.
 3. Add an entry to `CHANGELOG.md` and update the version line in the admin guide.
-4. Commit, tag the commit `v<version>`, and create a GitHub release with the package built from that commit attached as `pkg_isorairc-<version>.zip`.
+4. Run the tests (see above) and check they all pass.
+5. Commit, tag the commit `v<version>`, and create a GitHub release with the package built from that commit attached as `pkg_isorairc-<version>.zip`.
 
 ## Licence
 

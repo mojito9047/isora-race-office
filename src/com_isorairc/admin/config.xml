@@ -22,6 +22,15 @@
 			showon="irc_enabled:1"
 		/>
 		<field
+			name="irc_boatdata_url"
+			type="url"
+			label="IRC boat data page"
+			description="RORC's page of boat data for valid IRC certificates. Race management get a Boat data button next to each IRC boat on the Race entries page, which searches this page for the boat's certificate number. Leave empty to hide the button."
+			default="https://ircrating.org/boat-data-for-valid-irc-certificates/"
+			filter="url"
+			showon="irc_enabled:1"
+		/>
+		<field
 			name="ytc_enabled"
 			type="radio"
 			label="Import YTC ratings"

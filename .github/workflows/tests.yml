@@ -1,0 +1,49 @@
+name: Tests
+
+# Runs the whole test set on every push, on a throwaway Joomla site built
+# inside the job. See tests/README.md.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  tests:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.1', '8.3']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mysqli, curl, zip, dom, mbstring, gd, intl, simplexml
+          coverage: none
+
+      - name: Start the database server
+        run: sudo systemctl start mysql
+
+      - name: Build the package
+        run: python3 build.py
+
+      - name: Quick checks
+        run: php tests/static.php
+
+      - name: Full tests on a throwaway Joomla site
+        env:
+          MYSQL_ADMIN: mysql -uroot -proot
+          DB_HOST: 127.0.0.1
+        run: bash tests/run.sh
+
+      - name: Keep the built package
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pkg_isorairc-php${{ matrix.php }}
+          path: dist/pkg_isorairc.zip

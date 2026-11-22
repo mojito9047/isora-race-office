@@ -2,6 +2,7 @@
 
 \defined('_JEXEC') or die;
 
+use Isora\Component\Isorairc\Administrator\Helper\EntriesHelper;
 use Joomla\CMS\Factory;
 use Joomla\CMS\HTML\HTMLHelper;
 use Joomla\CMS\Router\Route;
@@ -30,6 +31,13 @@ foreach ($this->entries as $entry) {
 	/* Second-line details inside a cell, so the race management view fits the page without sideways scrolling. */
 	.com-isorairc-entries .isorairc-detail { display: block; font-size: 0.9em; opacity: 0.85; }
 	.com-isorairc-entries .isorairc-flag { font-weight: 700; opacity: 1; }
+	/* The Boat data button is a small form (the RORC page only takes a posted search), drawn as a link. */
+	.com-isorairc-entries form.isorairc-boatdata { display: block; margin: 0; }
+	.com-isorairc-entries form.isorairc-boatdata button {
+		padding: 0; border: 0; background: none; color: #b8560f; font: inherit; font-size: 0.9em; text-decoration: underline; cursor: pointer;
+	}
+	.com-isorairc-entries form.isorairc-boatdata button:hover,
+	.com-isorairc-entries form.isorairc-boatdata button:focus { color: #333; }
 	.com-isorairc-entries .isorairc-contact { min-width: 18em; overflow-wrap: anywhere; }
 	.com-isorairc-entries table th, .com-isorairc-entries table td { vertical-align: top; }
 </style>
@@ -128,6 +136,12 @@ foreach ($this->entries as $entry) {
 										<?php endif; ?>
 										<?php if ($entry->declared !== '') : ?>
 											<span class="isorairc-detail">On form: <?php echo $this->escape($entry->declared); ?></span>
+										<?php endif; ?>
+										<?php if ($this->boatDataUrl !== '' && $entry->scheme === 'irc' && $entry->cert_no !== '') : ?>
+											<form class="isorairc-boatdata" method="post" action="<?php echo $this->escape($this->boatDataUrl); ?>" target="_blank" rel="noopener noreferrer">
+												<input type="hidden" name="<?php echo EntriesHelper::BOAT_DATA_FIELD; ?>" value="<?php echo $this->escape($entry->cert_no); ?>">
+												<button type="submit" title="Opens RORC's valid boat data page, searched for certificate <?php echo $this->escape($entry->cert_no); ?>">Boat data</button>
+											</form>
 										<?php endif; ?>
 									<?php endif; ?>
 								</td>

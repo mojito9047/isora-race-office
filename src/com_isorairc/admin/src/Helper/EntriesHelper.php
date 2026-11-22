@@ -29,6 +29,26 @@ class EntriesHelper
         'entry_photo_field'    => 'Upload_Yacht_Photograph_',
     ];
 
+    /** RORC's page of boat data for valid IRC certificates. */
+    public const DEFAULT_BOAT_DATA_URL = 'https://ircrating.org/boat-data-for-valid-irc-certificates/';
+
+    /** Name of the search box on that page. */
+    public const BOAT_DATA_FIELD = 'pdf_search';
+
+    /**
+     * Address of the page where a boat's IRC data can be looked up by
+     * certificate number, or '' when the link has been switched off by
+     * emptying the setting.
+     */
+    public static function boatDataUrl(): string
+    {
+        // A setting that was saved empty means "off"; one never saved means the default.
+        $params = ComponentHelper::getParams('com_isorairc');
+        $url    = $params->exists('irc_boatdata_url') ? trim((string) $params->get('irc_boatdata_url', '')) : self::DEFAULT_BOAT_DATA_URL;
+
+        return preg_match('#^https?://#i', $url) ? $url : '';
+    }
+
     /** The RSForm form that holds the entries, or 0 when not set. */
     public static function formId(): int
     {
@@ -140,7 +160,8 @@ class EntriesHelper
      * A boat that sent the form more than once counts once: its latest form
      * decides. Each entry is an object with: submission_id, submitted, boat,
      * sail, model, class, club, declared, contact, email, phone, category,
-     * country, photo, scheme, rating, rating_text, rating_status (ok|check|none|off), rating_note.
+     * country, photo, scheme, rating, rating_text, rating_status (ok|check|none|off), rating_note,
+     * cert_no (certificate number of the rating row the boat was matched to, or '').
      *
      * @return object[]
      */
@@ -263,6 +284,7 @@ class EntriesHelper
             $entry->scheme        = self::schemeForClass($entry->class);
             $entry->rating        = null;
             $entry->rating_text   = '';
+            $entry->cert_no       = '';
             $entry->rating_status = isset($systems[$entry->scheme]) ? 'none' : 'off';
             $entry->rating_note   = isset($systems[$entry->scheme]) ? 'Not found in the ' . $systems[$entry->scheme]['label'] . ' list' : '';
             $groups[$entry->scheme][] = $entry;
@@ -306,7 +328,8 @@ class EntriesHelper
                 $where[] = $sail . ' = ' . $db->quote($plain);
             }
 
-            if (\strlen($digits) >= 2 && $digits !== $plain) {
+            // Also when only the digits were typed: "1234" must find "IRL1234".
+            if (\strlen($digits) >= 2) {
                 $where[] = $sail . ' LIKE ' . $db->quote('%' . $digits);
             }
         }
@@ -368,6 +391,8 @@ class EntriesHelper
         if (!$best) {
             return;
         }
+
+        $entry->cert_no = trim((string) ($best->cert_no ?? ''));
 
         $nonSpinnaker = self::isNonSpinnaker($entry->class);
         $value        = $nonSpinnaker ? $best->non_spi_tcc : $best->tcc;

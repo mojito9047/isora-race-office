@@ -1,6 +1,6 @@
 # ISORA Race Office: admin guide
 
-How to install the ISORA Race Office extension on the ISORA Joomla site and set it up. Written for version 1.4.4.
+How to install the ISORA Race Office extension on the ISORA Joomla site and set it up. Written for version 1.4.5.
 
 ## What it does
 
@@ -43,8 +43,10 @@ To update later, upload the newer package zip the same way. Races, snapshots and
 | Setting | Default |
 |---|---|
 | IRC ratings source | `https://www.topyacht.com.au/rorc/data/ClubListing.csv` |
+| IRC boat data page | `https://ircrating.org/boat-data-for-valid-irc-certificates/` |
 | YTC ratings source | The ISORA YTC Google Sheet |
 
+- The IRC boat data page is RORC's page for looking up a boat's measurement data. It is used for the **Boat data** button that race management get on the Race entries page (step 8). Empty the setting to hide the button.
 - Either system can be switched off with its **Import … ratings** switch.
 - The YTC source can be an ordinary Google Sheets link, as long as the sheet is shared so that anyone with the link can view it. It can also be the address of a CSV file.
 - The IRC file must have the columns `Boat Name`, `Sail No` and `TCC`. The YTC sheet must have `Boat Name`, `Sail Number` and `YTC`.
@@ -168,6 +170,7 @@ The public version of the Race entries page shows boat, sail number, type, class
 
 People who are allowed to manage the component also see, in the same table, a note under any rating that needs checking, the rating typed on the form, a Contact column (person in charge, mobile, e-mail) and an Entry column (entry type and when the form was sent). They also get two orange buttons above the table: **Download CSV** and **Download YB fleetsheet** (step 9).
 
+- Under the rating of each IRC boat they also get a **Boat data** link. It opens RORC's "Boat data for valid IRC certificates" page in a new tab, already searched for that boat's certificate number, with a Download link for the boat's data sheet. RORC only list certificates that are valid now, so for a race whose ratings are frozen, a boat whose certificate has since been reissued may give no result; search for its sail number on that page instead.
 - That permission is **Access Administration Interface** for ISORA Race Office, set under **Components → ISORA Race Office → Options → Permissions**. Super Users always have it.
 - They must be logged in on the public site, for example through the site's "Admin Log In" page. Being logged in to the administrator area alone is not enough.
 

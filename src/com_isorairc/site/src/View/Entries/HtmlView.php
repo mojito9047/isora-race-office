@@ -34,6 +34,9 @@ class HtmlView extends BaseHtmlView
     /** True for race management: adds contact details and the CSV download. */
     public $canManage = false;
 
+    /** Address of RORC's boat data page, or '' when the Boat data button is switched off. */
+    public $boatDataUrl = '';
+
     public function display($tpl = null)
     {
         $app   = Factory::getApplication();
@@ -42,6 +45,7 @@ class HtmlView extends BaseHtmlView
         $this->configured = EntriesHelper::formId() > 0;
         $this->canManage  = (bool) $app->getIdentity()->authorise('core.manage', 'com_isorairc');
         $this->systems    = RatingsHelper::systems();
+        $this->boatDataUrl = EntriesHelper::boatDataUrl();
         $this->races      = $model->getRaces();
 
         $raceId = $app->getInput()->getInt('race', 0);

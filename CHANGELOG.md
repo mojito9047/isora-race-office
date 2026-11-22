@@ -2,6 +2,12 @@
 
 Changes to ISORA Race Office (Joomla package `pkg_isorairc`), newest first.
 
+## 1.4.5 (22 November 2026)
+
+- New: race management get a **Boat data** button under each IRC boat's rating on the Race entries page. It opens RORC's "Boat data for valid IRC certificates" page in a new tab, searched for that boat's certificate number, where the boat's data sheet can be downloaded. The page's address is a new setting on the Rating sources tab; emptying it hides the button.
+- Fixed: on the Race entries page, a boat entered with only the digits of its sail number (for example "1234" for IRL1234) and a name that differs from the rating list was shown as not found. It is now found by its sail number and flagged for checking, like other name mismatches.
+- New: an automated test set (the `tests` folder) that installs the extension in a throwaway Joomla site and checks imports, rating deadlines, entries, the fleetsheet, the public pages, the downloads and the admin screens. It runs on GitHub on every push. No change to the installed extension apart from the fix above.
+
 ## 1.4.4 (22 November 2026)
 
 - Race entries page, race management view: the table now fits the page without scrolling sideways. The rating note and the rating typed on the form sit under the rating, phone and e-mail sit under the person in charge, and the date the form was sent sits under the entry type. The CSV download still has every value in its own column.

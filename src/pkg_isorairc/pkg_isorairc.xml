@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<extension type="package" method="upgrade">
+	<name>ISORA Race Office</name>
+	<packagename>isorairc</packagename>
+	<author>ISORA</author>
+	<creationDate>2026-11</creationDate>
+	<license>GPL-2.0-or-later</license>
+	<version>1.4.2</version>
+	<description>ISORA Race Office: IRC and YTC rating lookup, ratings frozen at each race's rating deadline, race entry lists and the YB Tracking fleetsheet.</description>
+	<scriptfile>script.php</scriptfile>
+	<files folder="packages">
+		<file type="component" id="com_isorairc">com_isorairc.zip</file>
+		<file type="plugin" id="isorairc" group="task">plg_task_isorairc.zip</file>
+	</files>
+</extension>

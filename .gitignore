@@ -1,0 +1,14 @@
+# Site backups: very large, and they contain the live database and its passwords.
+/backup/
+
+# Build output. Recreate with: python build.py
+/dist/
+
+# Local tool settings and editor files
+.claude/settings.local.json
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+.DS_Store
+__pycache__/

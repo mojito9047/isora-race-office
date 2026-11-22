@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<form>
+	<fieldset name="details">
+		<field name="id" type="hidden" default="0" />
+		<field
+			name="name"
+			type="text"
+			label="Race name"
+			required="true"
+			maxlength="190"
+		/>
+		<field
+			name="race_date"
+			type="calendar"
+			label="Race date"
+			format="%Y-%m-%d"
+			showtime="false"
+			required="true"
+		/>
+		<field
+			name="deadline_days"
+			type="number"
+			label="Rating deadline (days before race)"
+			description="Rating changes after this many days before the race date no longer count for this race."
+			default="7"
+			min="0"
+			max="365"
+			step="1"
+			filter="integer"
+			required="true"
+		/>
+		<field
+			name="entry_field"
+			type="list"
+			label="Entry form question"
+			description="The yes/no question on the entry form that asks whether a boat is entering this race. Leave empty to keep this race off the Race entries page."
+			default=""
+			>
+			<option value="">- Not on the entry form -</option>
+		</field>
+	</fieldset>
+</form>

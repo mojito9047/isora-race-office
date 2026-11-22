@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<extension type="plugin" group="task" method="upgrade">
+	<name>plg_task_isorairc</name>
+	<author>ISORA</author>
+	<creationDate>2026-11</creationDate>
+	<license>GPL-2.0-or-later</license>
+	<version>1.4.2</version>
+	<description>PLG_TASK_ISORAIRC_XML_DESCRIPTION</description>
+	<namespace path="src">Isora\Plugin\Task\Isorairc</namespace>
+	<files>
+		<folder plugin="isorairc">services</folder>
+		<folder>src</folder>
+		<folder>language</folder>
+	</files>
+</extension>

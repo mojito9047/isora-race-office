@@ -1,6 +1,6 @@
 # ISORA Race Office: admin guide
 
-How to install the ISORA Race Office extension on the ISORA Joomla site and set it up. Written for version 1.4.3.
+How to install the ISORA Race Office extension on the ISORA Joomla site and set it up. Written for version 1.4.4.
 
 ## What it does
 
@@ -21,7 +21,7 @@ The extension never changes the entry form or its submissions. It only reads the
 | Outgoing web access | The web server must be able to reach `www.topyacht.com.au` and `docs.google.com`. |
 | RSForm! Pro | Only needed for the Race entries page and the YB fleetsheet. Already installed on the ISORA site. |
 | PHP zip extension | Only needed for the YB fleetsheet. Present on most hosts. |
-| The package | `pkg_isorairc-<version>.zip` from the **Releases** page of the GitHub repository (`mojito9047/isora-race-office`), which has the build for each version. The repository is private, so you need access to it; otherwise ask whoever maintains the extension for the file. |
+| The package | `pkg_isorairc-<version>.zip` from the **Releases** page of the GitHub repository (`mojito9047/isora-race-office`), which has the build for each version. |
 
 Take a backup of the site first, as for any extension install.
 
@@ -166,7 +166,7 @@ Same as step 6, but choose **ISORA Race Office → Race entries**.
 
 The public version of the Race entries page shows boat, sail number, type, class, club and rating.
 
-People who are allowed to manage the component also see the rating note, the rating typed on the form, person in charge, mobile, e-mail, entry type and when the form was sent, and get two orange buttons above the table: **Download CSV** and **Download YB fleetsheet** (step 9).
+People who are allowed to manage the component also see, in the same table, a note under any rating that needs checking, the rating typed on the form, a Contact column (person in charge, mobile, e-mail) and an Entry column (entry type and when the form was sent). They also get two orange buttons above the table: **Download CSV** and **Download YB fleetsheet** (step 9).
 
 - That permission is **Access Administration Interface** for ISORA Race Office, set under **Components → ISORA Race Office → Options → Permissions**. Super Users always have it.
 - They must be logged in on the public site, for example through the site's "Admin Log In" page. Being logged in to the administrator area alone is not enough.

@@ -27,6 +27,11 @@ foreach ($this->entries as $entry) {
 	.com-isorairc-entries a.isorairc-button:hover,
 	.com-isorairc-entries a.isorairc-button:focus { background: #b8560f; color: #fff; text-decoration: none; }
 	.com-isorairc-entries a.isorairc-button:focus-visible { outline: 3px solid #333; outline-offset: 2px; }
+	/* Second-line details inside a cell, so the race management view fits the page without sideways scrolling. */
+	.com-isorairc-entries .isorairc-detail { display: block; font-size: 0.9em; opacity: 0.85; }
+	.com-isorairc-entries .isorairc-flag { font-weight: 700; opacity: 1; }
+	.com-isorairc-entries .isorairc-contact { min-width: 18em; overflow-wrap: anywhere; }
+	.com-isorairc-entries table th, .com-isorairc-entries table td { vertical-align: top; }
 </style>
 <div class="com-isorairc-entries">
 	<?php if (!$this->configured) : ?>
@@ -79,7 +84,7 @@ foreach ($this->entries as $entry) {
 				<a class="isorairc-button" href="<?php echo Route::_('index.php?option=com_isorairc&task=entries.export&race=' . (int) $this->race->id . '&' . Session::getFormToken() . '=1'); ?>">Download CSV</a>
 				<a class="isorairc-button" href="<?php echo Route::_('index.php?option=com_isorairc&task=entries.fleetsheet&race=' . (int) $this->race->id . '&' . Session::getFormToken() . '=1'); ?>">Download YB fleetsheet</a>
 				<?php if ($checks) : ?>
-					<span><?php echo (int) $checks; ?> <?php echo $checks === 1 ? 'entry needs its' : 'entries need their'; ?> rating checked (see Rating note).</span>
+					<span><?php echo (int) $checks; ?> <?php echo $checks === 1 ? 'entry needs its' : 'entries need their'; ?> rating checked (see the note under its rating).</span>
 				<?php endif; ?>
 			</p>
 		<?php endif; ?>
@@ -98,13 +103,8 @@ foreach ($this->entries as $entry) {
 							<th scope="col">Club</th>
 							<th scope="col">Rating</th>
 							<?php if ($this->canManage) : ?>
-								<th scope="col">Rating note</th>
-								<th scope="col">Declared</th>
-								<th scope="col">Person in charge</th>
-								<th scope="col">Mobile</th>
-								<th scope="col">E-mail</th>
-								<th scope="col">Entry type</th>
-								<th scope="col">Form sent</th>
+								<th scope="col">Contact</th>
+								<th scope="col">Entry</th>
 							<?php endif; ?>
 						</tr>
 					</thead>
@@ -122,15 +122,29 @@ foreach ($this->entries as $entry) {
 									<?php elseif ($entry->rating_status !== 'off') : ?>
 										<span class="text-muted">Not listed</span>
 									<?php endif; ?>
+									<?php if ($this->canManage) : ?>
+										<?php if ($entry->rating_note !== '') : ?>
+											<span class="isorairc-detail isorairc-flag"><?php echo $this->escape($entry->rating_note); ?></span>
+										<?php endif; ?>
+										<?php if ($entry->declared !== '') : ?>
+											<span class="isorairc-detail">On form: <?php echo $this->escape($entry->declared); ?></span>
+										<?php endif; ?>
+									<?php endif; ?>
 								</td>
 								<?php if ($this->canManage) : ?>
-									<td><?php echo $this->escape($entry->rating_note); ?></td>
-									<td><?php echo $this->escape($entry->declared); ?></td>
-									<td><?php echo $this->escape($entry->contact); ?></td>
-									<td><?php echo $this->escape($entry->phone); ?></td>
-									<td><?php echo $this->escape($entry->email); ?></td>
-									<td><?php echo $this->escape(trim(preg_replace('/\s*\(.*$/s', '', $entry->category))); ?></td>
-									<td><?php echo HTMLHelper::_('date', $entry->submitted, $format); ?></td>
+									<td class="isorairc-contact">
+										<?php echo $this->escape($entry->contact); ?>
+										<?php if ($entry->phone !== '') : ?>
+											<span class="isorairc-detail"><?php echo $this->escape($entry->phone); ?></span>
+										<?php endif; ?>
+										<?php if ($entry->email !== '') : ?>
+											<span class="isorairc-detail"><?php echo $this->escape($entry->email); ?></span>
+										<?php endif; ?>
+									</td>
+									<td>
+										<?php echo $this->escape(trim(preg_replace('/\s*\(.*$/s', '', $entry->category))); ?>
+										<span class="isorairc-detail">Sent <?php echo HTMLHelper::_('date', $entry->submitted, $format); ?></span>
+									</td>
 								<?php endif; ?>
 							</tr>
 						<?php endforeach; ?>

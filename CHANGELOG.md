@@ -2,6 +2,10 @@
 
 Changes to ISORA Race Office (Joomla package `pkg_isorairc`), newest first.
 
+## 1.4.4 (22 November 2026)
+
+- Race entries page, race management view: the table now fits the page without scrolling sideways. The rating note and the rating typed on the form sit under the rating, phone and e-mail sit under the person in charge, and the date the form was sent sits under the entry type. The CSV download still has every value in its own column.
+
 ## 1.4.3 (22 November 2026)
 
 - The **Download CSV** and **Download YB fleetsheet** links on the Race entries page are now solid buttons. The site template does not style standard buttons, so they were showing as plain text.

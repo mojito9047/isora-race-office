@@ -17,6 +17,17 @@ foreach ($this->entries as $entry) {
     $checks += \in_array($entry->rating_status, ['check', 'none'], true) ? 1 : 0;
 }
 ?>
+<style>
+	/* The site template does not style Bootstrap buttons, so these carry their own look. */
+	.com-isorairc-entries .isorairc-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin: 12px 0; }
+	.com-isorairc-entries a.isorairc-button {
+		display: inline-block; padding: 8px 16px; border: 1px solid #b8560f; border-radius: 4px;
+		background: #e8731a; color: #fff; font-weight: 700; line-height: 1.3; text-decoration: none; white-space: nowrap;
+	}
+	.com-isorairc-entries a.isorairc-button:hover,
+	.com-isorairc-entries a.isorairc-button:focus { background: #b8560f; color: #fff; text-decoration: none; }
+	.com-isorairc-entries a.isorairc-button:focus-visible { outline: 3px solid #333; outline-offset: 2px; }
+</style>
 <div class="com-isorairc-entries">
 	<?php if (!$this->configured) : ?>
 		<p>The entry form has not been chosen yet. Set it under ISORA Race Office &rarr; Options &rarr; Entry form.</p>
@@ -64,11 +75,11 @@ foreach ($this->entries as $entry) {
 		</p>
 
 		<?php if ($this->canManage) : ?>
-			<p>
-				<a class="btn btn-secondary btn-sm" href="<?php echo Route::_('index.php?option=com_isorairc&task=entries.export&race=' . (int) $this->race->id . '&' . Session::getFormToken() . '=1'); ?>">Download CSV</a>
-				<a class="btn btn-secondary btn-sm" href="<?php echo Route::_('index.php?option=com_isorairc&task=entries.fleetsheet&race=' . (int) $this->race->id . '&' . Session::getFormToken() . '=1'); ?>">Download YB fleetsheet</a>
+			<p class="isorairc-actions">
+				<a class="isorairc-button" href="<?php echo Route::_('index.php?option=com_isorairc&task=entries.export&race=' . (int) $this->race->id . '&' . Session::getFormToken() . '=1'); ?>">Download CSV</a>
+				<a class="isorairc-button" href="<?php echo Route::_('index.php?option=com_isorairc&task=entries.fleetsheet&race=' . (int) $this->race->id . '&' . Session::getFormToken() . '=1'); ?>">Download YB fleetsheet</a>
 				<?php if ($checks) : ?>
-					<span class="ms-2"><?php echo (int) $checks; ?> <?php echo $checks === 1 ? 'entry needs its' : 'entries need their'; ?> rating checked (see Rating note).</span>
+					<span><?php echo (int) $checks; ?> <?php echo $checks === 1 ? 'entry needs its' : 'entries need their'; ?> rating checked (see Rating note).</span>
 				<?php endif; ?>
 			</p>
 		<?php endif; ?>

@@ -1,6 +1,6 @@
 # ISORA Race Office: admin guide
 
-How to install the ISORA Race Office extension on the ISORA Joomla site and set it up. Written for version 1.4.2.
+How to install the ISORA Race Office extension on the ISORA Joomla site and set it up. Written for version 1.4.3.
 
 ## What it does
 
@@ -19,8 +19,9 @@ The extension never changes the entry form or its submissions. It only reads the
 | Database | MySQL or MariaDB. |
 | Login | A Super User account for the administrator area. |
 | Outgoing web access | The web server must be able to reach `www.topyacht.com.au` and `docs.google.com`. |
-| RSForm! Pro | Only needed for the Race entries page. Already installed on the ISORA site. |
-| The package | `dist/pkg_isorairc.zip` |
+| RSForm! Pro | Only needed for the Race entries page and the YB fleetsheet. Already installed on the ISORA site. |
+| PHP zip extension | Only needed for the YB fleetsheet. Present on most hosts. |
+| The package | `pkg_isorairc.zip`. It is not stored in the GitHub repository; get it from whoever maintains the extension, or build it from the source with `python build.py`, which writes it to the `dist` folder. |
 
 Take a backup of the site first, as for any extension install.
 
@@ -165,7 +166,7 @@ Same as step 6, but choose **ISORA Race Office → Race entries**.
 
 The public version of the Race entries page shows boat, sail number, type, class, club and rating.
 
-People who are allowed to manage the component also see the rating note, the rating typed on the form, person in charge, mobile, e-mail, entry type and when the form was sent, and get a **Download CSV** button.
+People who are allowed to manage the component also see the rating note, the rating typed on the form, person in charge, mobile, e-mail, entry type and when the form was sent, and get two orange buttons above the table: **Download CSV** and **Download YB fleetsheet** (step 9).
 
 - That permission is **Access Administration Interface** for ISORA Race Office, set under **Components → ISORA Race Office → Options → Permissions**. Super Users always have it.
 - They must be logged in on the public site, for example through the site's "Admin Log In" page. Being logged in to the administrator area alone is not enough.
@@ -206,8 +207,6 @@ Download the sheet after the rating deadline if you want the frozen ratings in i
 | Field name: Owner's country | `Country` | The field's name on the entry form. |
 | Field name: Yacht photograph | `Upload_Yacht_Photograph_` | The field's name on the entry form. |
 
-The web server needs PHP's zip extension to create the file (it is present on most hosts).
-
 ## Checks after setup
 
 - [ ] **Components → ISORA Race Office** shows a recent "last imported" time for IRC and YTC.
@@ -242,4 +241,5 @@ The web server needs PHP's zip extension to create the file (it is present on mo
 
 1. Put the new entry form's ID in **Options → Entry form** and check the field names, including the two on the **YB fleetsheet** tab.
 2. Add the new season's races and link each to its question.
-3. Old races and their snapshots can stay; they remain available in the rating lookup's "Ratings as at" list.
+3. Check the IRC class bands on the **YB fleetsheet** tab against the new Notice of Race.
+4. Old races and their snapshots can stay; they remain available in the rating lookup's "Ratings as at" list.

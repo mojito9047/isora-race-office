@@ -21,19 +21,19 @@ The extension never changes the entry form or its submissions. It only reads the
 | Outgoing web access | The web server must be able to reach `www.topyacht.com.au` and `docs.google.com`. |
 | RSForm! Pro | Only needed for the Race entries page and the YB fleetsheet. Already installed on the ISORA site. |
 | PHP zip extension | Only needed for the YB fleetsheet. Present on most hosts. |
-| The package | `pkg_isorairc.zip`. It is not stored in the GitHub repository; get it from whoever maintains the extension, or build it from the source with `python build.py`, which writes it to the `dist` folder. |
+| The package | `pkg_isorairc-<version>.zip` from the **Releases** page of the GitHub repository (`mojito9047/isora-race-office`), which has the build for each version. The repository is private, so you need access to it; otherwise ask whoever maintains the extension for the file. |
 
 Take a backup of the site first, as for any extension install.
 
 ## 1. Install
 
 1. In the administrator area go to **System → Install → Extensions**.
-2. On the **Upload Package File** tab, upload `pkg_isorairc.zip`.
+2. On the **Upload Package File** tab, upload the package zip.
 3. Wait for "Installation of the package was successful".
 
 This installs two things: the **ISORA Race Office** component (under the **Components** menu) and a scheduled-task plugin called **Task - ISORA Race Office**, which is switched on automatically.
 
-To update later, upload the newer `pkg_isorairc.zip` the same way. Races, snapshots and settings are kept.
+To update later, upload the newer package zip the same way. Races, snapshots and settings are kept.
 
 ## 2. Check the rating sources
 

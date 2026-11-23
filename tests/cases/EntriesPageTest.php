@@ -17,7 +17,7 @@ class EntriesPageTest extends SiteTest
     /** The page's address: its menu item, as set up in the admin guide. */
     private const PAGE = '/race-entries';
 
-    private const PRIVATE_DETAILS = ['pat.skipper@example.invalid', '555 0100', 'Pat Skipper', 'On form', 'Download CSV', 'Download YB fleetsheet', 'Season entry', 'Boat data', 'pdf_search', 'ircrating.org'];
+    private const PRIVATE_DETAILS = ['pat.skipper@example.invalid', '555 0100', 'Pat Skipper', 'On form', 'Download CSV', 'Download YB fleetsheet', 'Season entry', 'Boat data', 'Rating on entry form', 'Use secondary', 'Secondary chosen', 'pdf_search', 'ircrating.org'];
 
     private int $race;
 
@@ -124,7 +124,7 @@ class EntriesPageTest extends SiteTest
         $page = $this->page($this->browser('office'));
         $text = $page->text();
 
-        $this->assertContains('Sea Breeze IRL 1234 J/109 IRC Test Yacht Club 1.045 On form: 1.039 Pat Skipper +353 85 555 0100 pat.skipper@example.invalid Season entry Sent 01 Oct 2026 11:00', $text);
+        $this->assertContains('Sea Breeze IRL 1234 J/109 IRC Test Yacht Club 1.045 On form: 1.039 Details Sea Breeze IRL 1234 Certificate in use Primary Rating on entry form 1.039 Close Pat Skipper +353 85 555 0100 pat.skipper@example.invalid Season entry Sent 01 Oct 2026 11:00', $text);
         $this->assertContains('Not listed Not found in the YTC list', $text);
         $this->assertContains('1 entry needs its rating checked', $text);
         $this->assertTrue($this->link($page, 'Download CSV') !== '');
@@ -198,7 +198,8 @@ class EntriesPageTest extends SiteTest
         $this->assertContains('race=' . $this->race, $after->url, 'Back on the same race');
 
         $page = $this->page($office);
-        $this->assertContains('Mojito GBR 4822R J/109 IRC Test Yacht Club 1.052 Secondary certificate', $page->text());
+        $this->assertContains('Mojito GBR 4822R J/109 IRC Test Yacht Club 1.052 2 certs: secondary', $page->text());
+        $this->assertContains('Certificate in use Secondary (of 2) Secondary chosen', $page->text());
         $this->assertMatches('/Secondary chosen \d\d \w{3} \d{4} \d\d:\d\d by /', $page->text());
         $this->assertContains('<button type="submit">Use primary certificate</button>', $page->body);
         $this->assertContains('name="pdf_search" value="200"', $page->body, 'Boat data is searched for the secondary certificate');
@@ -208,8 +209,9 @@ class EntriesPageTest extends SiteTest
         $back = $this->swap($office, $page, 'Mojito', 'GBR 4822R', 'primary');
         $this->assertContains('Mojito is now on its primary certificate for Race 1.', $back->component('com-isorairc-entries'));
         $page = $this->page($office);
-        $this->assertContains('Mojito GBR 4822R J/109 IRC Test Yacht Club 1.084', $page->text());
-        $this->assertNotContains('Secondary certificate', $page->text());
+        $this->assertContains('Mojito GBR 4822R J/109 IRC Test Yacht Club 1.084 2 certs: primary', $page->text());
+        $this->assertNotContains('2 certs: secondary', $page->text());
+        $this->assertNotContains('Secondary chosen', $page->text());
     }
 
     public function testSwapConfirmationIsOnlyShownToTheOneWhoMadeTheSwap(): void
@@ -242,7 +244,9 @@ class EntriesPageTest extends SiteTest
             $page = $this->page($this->browser($who));
             $what = 'Page for ' . ($who ?: 'the public');
 
-            $this->assertContains('Mojito GBR 4822R J/109 IRC Test Yacht Club 1.052 Secondary certificate', $page->text(), $what);
+            $this->assertContains('Mojito GBR 4822R J/109 IRC Test Yacht Club 1.052 2 certs: secondary', $page->text(), $what);
+            $this->assertContains('<span class="isorairc-tag isorairc-tag-secondary"', $page->body, $what . ': the tag stands out');
+            $this->assertContains('Certificate in use Secondary (of 2) Close', $page->text(), $what);
             $this->assertContains('Crew 4', $page->text(), $what . ': the pop-up has the secondary certificate\'s details');
             $this->assertNotContains('isorairc-cert"', $page->body, $what);
             $this->assertNotContains('Use primary certificate', $page->body, $what);
@@ -264,7 +268,7 @@ class EntriesPageTest extends SiteTest
         $this->assertContains('Use secondary certificate', $page->body);
         $after = $this->swap($office, $page, 'Mojito', 'GBR 4822R', 'secondary', $past);
         $this->assertContains('Mojito is now on its secondary certificate for Sailed.', $after->component('com-isorairc-entries'));
-        $this->assertContains('IRC Test Yacht Club 1.052 Secondary certificate', $this->page($office, $past)->text());
+        $this->assertContains('IRC Test Yacht Club 1.052 2 certs: secondary', $this->page($office, $past)->text());
     }
 
     public function testSwapIsRefusedForEveryoneButRaceManagement(): void
@@ -343,7 +347,7 @@ class EntriesPageTest extends SiteTest
         $this->assertNotContains('<v>1.084</v>', $sheet);
     }
 
-    // ------------------------------------------------------------ IRC data pop-up
+    // ------------------------------------------------------------ the Details pop-up
 
     private function ircBoat(array $details = ['issue_date' => '2026-03-15', 'crew' => 9, 'headsails' => 3, 'flying_headsails' => 0, 'spinnakers' => 4, 'sss_base' => 32]): void
     {
@@ -359,14 +363,14 @@ class EntriesPageTest extends SiteTest
             $page = $this->page($this->browser($who));
             $what = 'Page for ' . ($who ?: 'the public');
 
-            $this->assertContains('<button type="button" class="isorairc-ircdata" aria-haspopup="dialog" onclick="this.nextElementSibling.showModal()">IRC data</button>', $page->body, $what);
+            $this->assertContains('<button type="button" class="isorairc-details" aria-haspopup="dialog" onclick="this.nextElementSibling.showModal()">Details</button>', $page->body, $what);
             $this->assertSame(1, substr_count($page->body, '<dialog class="isorairc-dialog"'), $what);
             $this->assertContains(
-                "IRC data Sea Breeze IRL 1234 From the boat's IRC certificate, on the current list. Issue date 15 Mar 2026 Crew 9 Headsails 3 Flying headsails 0 Spinnakers 4 SSS base value 32 Close",
+                "Details Sea Breeze IRL 1234 From the boat's IRC certificate, on the current list. Issue date 15 Mar 2026 Crew 9 Headsails 3 Flying headsails 0 Spinnakers 4 SSS base value 32 Certificate in use Primary",
                 $page->text(),
                 $what
             );
-            $this->assertContains('<form method="dialog"><button type="submit">Close</button></form>', $page->body, $what);
+            $this->assertContains('<form class="isorairc-close" method="dialog"><button type="submit">Close</button></form>', $page->body, $what);
         }
     }
 
@@ -378,10 +382,13 @@ class EntriesPageTest extends SiteTest
         Env::submit(Env::boat(['Boat_Name' => 'Slow Coach', 'Sail_Number' => 'GBR 55', 'Class_Racing' => 'YTC']));
         Env::submit(Env::boat(['Boat_Name' => 'Unlisted', 'Sail_Number' => 'IRL 777']));
         Env::submit(Env::boat(['Boat_Name' => 'Bare Row', 'Sail_Number' => 'IRL 2']));
-        $page = $this->page($this->browser('office'));
+        $page = $this->page($this->browser());
 
-        $this->assertSame(1, substr_count($page->body, 'class="isorairc-ircdata"'), 'One button: for the IRC boat with details');
+        $this->assertSame(1, substr_count($page->body, 'class="isorairc-details"'), 'For the public, one link: for the IRC boat with certificate details');
         $this->assertSame(1, substr_count($page->body, '<dialog'));
+
+        // Race management have something to see for every boat: at least the rating typed on its form.
+        $this->assertSame(4, substr_count($this->page($this->browser('office'))->body, 'class="isorairc-details"'), 'Race management');
     }
 
     public function testPopUpShowsADashForAValueTheListDoesNotHave(): void
@@ -390,7 +397,7 @@ class EntriesPageTest extends SiteTest
         $this->ircBoat(['issue_date' => '2026-03-15', 'crew' => 9]);
         $text = $this->page($this->browser())->text();
 
-        $this->assertContains('Issue date 15 Mar 2026 Crew 9 Headsails – Flying headsails – Spinnakers – SSS base value – Close', $text);
+        $this->assertContains('Issue date 15 Mar 2026 Crew 9 Headsails – Flying headsails – Spinnakers – SSS base value – Certificate in use Primary Close', $text);
     }
 
     public function testPopUpSaysWhenItsValuesAreTheFrozenOnes(): void
@@ -410,9 +417,70 @@ class EntriesPageTest extends SiteTest
         Env::submit(Env::boat(['Boat_Name' => '<b>"Bold"</b>', 'Sail_Number' => 'IRL 9']));
         $page = $this->page($this->browser());
 
-        $this->assertContains('aria-label="IRC data for &lt;b&gt;&quot;Bold&quot;&lt;/b&gt;"', $page->body);
+        $this->assertContains('aria-label="Details for &lt;b&gt;&quot;Bold&quot;&lt;/b&gt;"', $page->body);
         $this->assertContains('<h3>&lt;b&gt;&quot;Bold&quot;&lt;/b&gt; IRL 9</h3>', $page->body);
         $this->assertNotContains('<b>"Bold"', $page->body);
+    }
+
+    public function testRatingCellHasOneLinkAndEverythingElseIsInThePopUp(): void
+    {
+        // Version 1.8.0: the swap and Boat data used to be links of their own under the rating.
+        $this->twoCertificates();
+        $page = $this->page($this->browser('office'));
+
+        preg_match_all('#<dialog class="isorairc-dialog".*?</dialog>#s', $page->body, $dialogs);
+        $outside = preg_replace('#<dialog class="isorairc-dialog".*?</dialog>#s', '', $page->body);
+
+        $this->assertCount(2, $dialogs[0], 'One pop-up per boat');
+        $this->assertSame(2, substr_count($outside, '<button type="button" class="isorairc-details"'), 'One Details link per boat');
+        $this->assertNotContains('isorairc-cert', $outside, 'The swap is inside the pop-up');
+        $this->assertNotContains('<form class="isorairc-boatdata"', $outside, 'Boat data is inside the pop-up');
+        $this->assertContains('<button type="submit">Use secondary certificate</button>', $dialogs[0][0]);
+        $this->assertContains('Boat data on RORC', $dialogs[0][0]);
+        $this->assertNotContains('Use secondary certificate', $dialogs[0][1], 'Sea Breeze has one certificate');
+    }
+
+    public function testEveryoneSeesWhichBoatsHaveTwoCertificatesAndWhichIsInUse(): void
+    {
+        $this->twoCertificates();
+
+        foreach (['', 'registered', 'office'] as $who) {
+            $page = $this->page($this->browser($who));
+            $what = 'Page for ' . ($who ?: 'the public');
+
+            $this->assertContains('IRC Test Yacht Club 1.084 2 certs: primary', $page->text(), $what);
+            $this->assertSame(1, substr_count($page->body, 'class="isorairc-tag"'), $what . ': only the boat with two certificates is tagged');
+            $this->assertContains('title="This boat has two IRC certificates. Its primary one is used for this race."', $page->body, $what);
+            $this->assertNotContains('isorairc-tag-secondary', $page->body, $what);
+        }
+    }
+
+    public function testBoatOnlyListedWithASecondaryCertificateIsTaggedToo(): void
+    {
+        Env::addRating('irc', 'LONER - SEC', 'IRL77', 0.990, null, ['secondary' => 'SEC', 'crew' => 5]);
+        Env::submit(Env::boat(['Boat_Name' => 'Loner', 'Sail_Number' => 'IRL 77']));
+        $page = $this->page($this->browser());
+
+        $this->assertContains('0.990 ? Secondary cert', $page->text());
+        $this->assertNotContains('2 certs', $page->text());
+    }
+
+    public function testRatingTypedOnTheFormIsOnlyInTheTableWhenItDisagreesWithTheList(): void
+    {
+        Env::addRating('irc', 'Agrees', 'IRL1', 1.045);
+        Env::addRating('irc', 'Differs', 'IRL2', 1.045);
+        Env::addRating('irc', 'Loose', 'IRL3', 1.045);
+        Env::submit(Env::boat(['Boat_Name' => 'Agrees', 'Sail_Number' => 'IRL 1', 'Latest_IRC_TCC' => '1.045']));
+        Env::submit(Env::boat(['Boat_Name' => 'Differs', 'Sail_Number' => 'IRL 2', 'Latest_IRC_TCC' => '1.044']));
+        Env::submit(Env::boat(['Boat_Name' => 'Loose', 'Sail_Number' => 'IRL 3', 'Latest_IRC_TCC' => 'about 1.045']));
+        Env::submit(Env::boat(['Boat_Name' => 'Unlisted', 'Sail_Number' => 'IRL 9', 'Latest_IRC_TCC' => '1.000']));
+        $text = $this->page($this->browser('office'))->text();
+
+        $this->assertContains('Agrees IRL 1 J/109 IRC Test Yacht Club 1.045 Details', $text, 'Same rating: nothing in the table');
+        $this->assertContains('Rating on entry form 1.045 Close', $text, 'but still in the pop-up');
+        $this->assertContains('Differs IRL 2 J/109 IRC Test Yacht Club 1.045 On form: 1.044 Details', $text);
+        $this->assertContains('1.045 On form: about 1.045 Details', $text, 'Not a plain number: shown, to be read by a person');
+        $this->assertContains('Not listed Not found in the IRC list On form: 1.000 Details', $text, 'No rating to compare with: shown');
     }
 
     public function testRaceManagementGetABoatDataButtonForEachRatedIrcBoat(): void
@@ -428,7 +496,7 @@ class EntriesPageTest extends SiteTest
         $this->assertSame(1, substr_count($page->body, '<form class="isorairc-boatdata"'), 'One button: not for the YTC boat or the unrated one');
         $this->assertContains('<form class="isorairc-boatdata" method="post" action="https://ircrating.org/boat-data-for-valid-irc-certificates/" target="_blank" rel="noopener noreferrer">', $page->body);
         $this->assertContains('<input type="hidden" name="pdf_search" value="41029">', $page->body);
-        $this->assertContains('1.045 On form: 1.010 Boat data Pat Skipper', $page->text());
+        $this->assertContains('1.045 On form: 1.010 Details Sea Breeze IRL 1234 Certificate in use Primary Rating on entry form 1.010 Boat data on RORC ↗ Close Pat Skipper', $page->text());
     }
 
     public function testBoatDataButtonFollowsItsSetting(): void

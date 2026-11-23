@@ -2,6 +2,13 @@
 
 Changes to ISORA Race Office (Joomla package `pkg_isorairc`), newest first.
 
+## 1.8.0 (23 November 2026)
+
+- Race entries page: the Rating column is tidier. Each boat now has one link under its rating, **Details**, which opens a window holding everything that used to be stacked in the table: the certificate values (the former IRC data window), which certificate is in use, the rating typed on the entry form, the **Use secondary certificate** / **Use primary certificate** button, and the link to RORC's boat data. Nothing has been removed.
+- A boat with two IRC certificates has a tag next to its rating, **2 certs: primary** or **2 certs: secondary** (the secondary one in orange), so you can see at a glance which boats have a choice and what is chosen. Everyone sees the tag. It replaces the "Secondary certificate" line.
+- The rating typed on the entry form ("On form") is now shown in the table only when it differs from the rating on the list, or cannot be compared. It is always in the Details window.
+- The swap is now a proper button, since it changes something; Details and Boat data remain links. The links are no longer forced into capitals by the site's template.
+
 ## 1.7.1 (23 November 2026)
 
 - Fixed: after swapping a boat between its primary and secondary certificate, the confirmation ("Mojito is now on its secondary certificate for …") did not appear on the ISORA site, because the site's template has no place for Joomla's messages on that page. The Race entries page now shows it itself, in a green box above the race list (orange when nothing was changed). It is shown once, to the person who made the swap. The swap itself always worked.

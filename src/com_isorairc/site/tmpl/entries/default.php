@@ -31,25 +31,25 @@ foreach ($this->entries as $entry) {
 	/* Second-line details inside a cell, so the race management view fits the page without sideways scrolling. */
 	.com-isorairc-entries .isorairc-detail { display: block; font-size: 0.9em; opacity: 0.85; }
 	.com-isorairc-entries .isorairc-flag { font-weight: 700; opacity: 1; }
-	/* The Boat data button is a small form (the RORC page only takes a posted search), drawn as a link. */
-	.com-isorairc-entries form.isorairc-boatdata,
-	.com-isorairc-entries form.isorairc-cert { display: block; margin: 0; }
-	.com-isorairc-entries form.isorairc-boatdata button,
-	.com-isorairc-entries form.isorairc-cert button {
-		padding: 0; border: 0; background: none; color: #b8560f; font: inherit; font-size: 0.9em; text-decoration: underline; cursor: pointer;
+	/* One "Details" link per boat opens a pop-up with the rest: certificate values, the swap, Boat data. */
+	.com-isorairc-entries button.isorairc-details,
+	.com-isorairc-entries form.isorairc-boatdata button {
+		display: inline; padding: 0; border: 0; background: none; color: #b8560f; font: inherit; font-size: 0.9em; font-weight: 400;
+		text-decoration: underline; text-transform: none; letter-spacing: normal; cursor: pointer;
 	}
+	.com-isorairc-entries button.isorairc-details { display: block; }
+	.com-isorairc-entries button.isorairc-details:hover,
+	.com-isorairc-entries button.isorairc-details:focus,
 	.com-isorairc-entries form.isorairc-boatdata button:hover,
-	.com-isorairc-entries form.isorairc-boatdata button:focus,
-	.com-isorairc-entries form.isorairc-cert button:hover,
-	.com-isorairc-entries form.isorairc-cert button:focus { color: #333; }
-	/* The IRC data button opens a pop-up with details from the boat's certificate. */
-	.com-isorairc-entries button.isorairc-ircdata {
-		display: block; padding: 0; border: 0; background: none; color: #b8560f; font: inherit; font-size: 0.9em; text-decoration: underline; cursor: pointer;
+	.com-isorairc-entries form.isorairc-boatdata button:focus { color: #333; }
+	/* Which certificate a boat with two is on. */
+	.com-isorairc-entries .isorairc-tag {
+		display: inline-block; margin-left: 4px; padding: 0 6px; border: 1px solid #999; border-radius: 10px;
+		font-size: 0.8em; line-height: 1.5; white-space: nowrap; color: #444; background: #fff;
 	}
-	.com-isorairc-entries button.isorairc-ircdata:hover,
-	.com-isorairc-entries button.isorairc-ircdata:focus { color: #333; }
+	.com-isorairc-entries .isorairc-tag-secondary { border-color: #b8560f; background: #e8731a; color: #fff; font-weight: 700; }
 	.com-isorairc-entries dialog.isorairc-dialog {
-		width: 22em; max-width: calc(100vw - 32px); padding: 18px 20px; border: 1px solid #999; border-radius: 6px;
+		width: 24em; max-width: calc(100vw - 32px); padding: 18px 20px; border: 1px solid #999; border-radius: 6px;
 		background: #fff; color: #222; font-weight: 400; text-align: left; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
 	}
 	.com-isorairc-entries dialog.isorairc-dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
@@ -57,12 +57,21 @@ foreach ($this->entries as $entry) {
 	.com-isorairc-entries dialog.isorairc-dialog table { width: 100%; margin: 10px 0 14px; border-collapse: collapse; }
 	.com-isorairc-entries dialog.isorairc-dialog th,
 	.com-isorairc-entries dialog.isorairc-dialog td { padding: 5px 0; border: 0; border-bottom: 1px solid #ddd; background: none; color: inherit; text-align: left; }
-	.com-isorairc-entries dialog.isorairc-dialog th { font-weight: 400; }
+	.com-isorairc-entries dialog.isorairc-dialog th { font-weight: 400; padding-right: 12px; }
 	.com-isorairc-entries dialog.isorairc-dialog td { font-weight: 700; text-align: right; }
-	.com-isorairc-entries dialog.isorairc-dialog form { margin: 0; text-align: right; }
-	.com-isorairc-entries dialog.isorairc-dialog form button {
-		padding: 6px 16px; border: 1px solid #b8560f; border-radius: 4px; background: #e8731a; color: #fff; font: inherit; font-weight: 700; cursor: pointer;
+	.com-isorairc-entries dialog.isorairc-dialog form { margin: 0 0 10px; }
+	.com-isorairc-entries dialog.isorairc-dialog form.isorairc-close { margin: 14px 0 0; text-align: right; }
+	.com-isorairc-entries dialog.isorairc-dialog form.isorairc-cert button,
+	.com-isorairc-entries dialog.isorairc-dialog form.isorairc-close button {
+		padding: 6px 16px; border: 1px solid #b8560f; border-radius: 4px; font: inherit; font-weight: 700;
+		text-transform: none; letter-spacing: normal; cursor: pointer;
 	}
+	/* Changing the certificate is the pop-up's one action; Close is the quiet button. */
+	.com-isorairc-entries dialog.isorairc-dialog form.isorairc-cert button { background: #e8731a; color: #fff; }
+	.com-isorairc-entries dialog.isorairc-dialog form.isorairc-cert button:hover,
+	.com-isorairc-entries dialog.isorairc-dialog form.isorairc-cert button:focus { background: #b8560f; }
+	.com-isorairc-entries dialog.isorairc-dialog form.isorairc-close button { background: #fff; color: #b8560f; }
+	.com-isorairc-entries dialog.isorairc-dialog form.isorairc-boatdata button { font-size: 1em; }
 	/* The result of a certificate swap, shown by the page itself. */
 	.com-isorairc-entries .isorairc-notice { margin: 0 0 14px; padding: 10px 14px; border: 1px solid #2e7d32; border-left-width: 5px; border-radius: 4px; background: #edf7ed; color: #1b4d1e; font-weight: 700; }
 	.com-isorairc-entries .isorairc-notice-warning { border-color: #b8560f; background: #fff4e5; color: #6b3200; }
@@ -156,67 +165,95 @@ foreach ($this->entries as $entry) {
 								<td><?php echo $this->escape($entry->class); ?></td>
 								<td><?php echo $this->escape($entry->club); ?></td>
 								<td>
+									<?php
+									$isIrc    = $entry->scheme === 'irc';
+									$onList   = $isIrc && EntriesHelper::hasIrcDetails($entry);
+									$canSwap  = $this->canManage && $isIrc && ($entry->has_secondary || $entry->certificate_wanted === 'secondary');
+									$boatData = $this->canManage && $this->boatDataUrl !== '' && $isIrc && $entry->cert_no !== '';
+									// The rating typed on the form is only worth a line in the table when it disagrees with the list.
+									$agrees   = is_numeric($entry->declared) && $entry->rating !== null && abs((float) $entry->declared - $entry->rating) < 0.0005;
+									$details  = $onList || ($this->canManage && ($entry->declared !== '' || $canSwap || $boatData));
+									?>
 									<?php if ($entry->rating_text !== '') : ?>
 										<?php echo $this->escape($entry->rating_text); ?><?php echo $entry->rating_status === 'check' ? ' <span title="To be confirmed">?</span>' : ''; ?>
 									<?php elseif ($entry->rating_status !== 'off') : ?>
 										<span class="text-muted">Not listed</span>
 									<?php endif; ?>
-									<?php if ($entry->certificate === 'secondary') : ?>
-										<span class="isorairc-detail">Secondary certificate</span>
+									<?php if ($isIrc && $entry->has_secondary) : ?>
+										<span class="isorairc-tag<?php echo $entry->certificate === 'secondary' ? ' isorairc-tag-secondary' : ''; ?>" title="This boat has two IRC certificates. Its <?php echo $entry->certificate; ?> one is used for this race.">2 certs: <?php echo $entry->certificate; ?></span>
+									<?php elseif ($entry->certificate === 'secondary') : ?>
+										<span class="isorairc-tag isorairc-tag-secondary" title="The rating is from a secondary IRC certificate.">Secondary cert</span>
 									<?php endif; ?>
-									<?php if ($entry->scheme === 'irc' && EntriesHelper::hasIrcDetails($entry)) : ?>
-										<button type="button" class="isorairc-ircdata" aria-haspopup="dialog" onclick="this.nextElementSibling.showModal()">IRC data</button>
-										<dialog class="isorairc-dialog" aria-label="IRC data for <?php echo $this->escape($entry->boat); ?>" onclick="if (event.target === this) { this.close(); }">
+									<?php if ($this->canManage && $entry->rating_note !== '') : ?>
+										<span class="isorairc-detail isorairc-flag"><?php echo $this->escape($entry->rating_note); ?></span>
+									<?php endif; ?>
+									<?php if ($this->canManage && $entry->declared !== '' && !$agrees) : ?>
+										<span class="isorairc-detail">On form: <?php echo $this->escape($entry->declared); ?></span>
+									<?php endif; ?>
+									<?php if ($details) : ?>
+										<button type="button" class="isorairc-details" aria-haspopup="dialog" onclick="this.nextElementSibling.showModal()">Details</button>
+										<dialog class="isorairc-dialog" aria-label="Details for <?php echo $this->escape($entry->boat); ?>" onclick="if (event.target === this) { this.close(); }">
 											<h3><?php echo $this->escape(trim($entry->boat . ' ' . $entry->sail)); ?></h3>
-											<span class="isorairc-detail">From the boat's IRC certificate, <?php echo $this->sources['irc'] === 'snapshot' ? 'as frozen at the rating deadline' : 'on the current list'; ?>.</span>
+											<?php if ($onList) : ?>
+												<span class="isorairc-detail">From the boat's IRC certificate, <?php echo $this->sources['irc'] === 'snapshot' ? 'as frozen at the rating deadline' : 'on the current list'; ?>.</span>
+											<?php endif; ?>
 											<table>
-												<?php foreach (EntriesHelper::IRC_DETAILS as $detail => $label) : ?>
+												<?php if ($onList) : ?>
+													<?php foreach (EntriesHelper::IRC_DETAILS as $detail => $label) : ?>
+														<tr>
+															<th scope="row"><?php echo $label; ?></th>
+															<td><?php
+																if ($entry->$detail === '') {
+																	echo '&ndash;';
+																} elseif ($detail === 'issue_date') {
+																	echo HTMLHelper::_('date', $entry->$detail, 'd M Y', 'UTC');
+																} else {
+																	echo $this->escape($entry->$detail);
+																}
+															?></td>
+														</tr>
+													<?php endforeach; ?>
+												<?php endif; ?>
+												<?php if ($isIrc && $entry->certificate !== '') : ?>
 													<tr>
-														<th scope="row"><?php echo $label; ?></th>
-														<td><?php
-															if ($entry->$detail === '') {
-																echo '&ndash;';
-															} elseif ($detail === 'issue_date') {
-																echo HTMLHelper::_('date', $entry->$detail, 'd M Y', 'UTC');
-															} else {
-																echo $this->escape($entry->$detail);
-															}
-														?></td>
+														<th scope="row">Certificate in use</th>
+														<td><?php echo ucfirst($entry->certificate); ?><?php echo $entry->has_secondary ? ' (of 2)' : ''; ?></td>
 													</tr>
-												<?php endforeach; ?>
+												<?php endif; ?>
+												<?php if ($this->canManage && $entry->certificate_wanted === 'secondary' && $entry->certificate_set_at !== '') : ?>
+													<tr>
+														<th scope="row">Secondary chosen</th>
+														<td><?php echo HTMLHelper::_('date', $entry->certificate_set_at, $format); ?><?php echo $entry->certificate_set_by !== '' ? ' by ' . $this->escape($entry->certificate_set_by) : ''; ?></td>
+													</tr>
+												<?php endif; ?>
+												<?php if ($this->canManage && $entry->declared !== '') : ?>
+													<tr>
+														<th scope="row">Rating on entry form</th>
+														<td><?php echo $this->escape($entry->declared); ?></td>
+													</tr>
+												<?php endif; ?>
 											</table>
-											<form method="dialog"><button type="submit">Close</button></form>
+											<?php if ($canSwap) : ?>
+												<?php $other = $entry->certificate_wanted === 'secondary' ? 'primary' : 'secondary'; ?>
+												<form class="isorairc-cert" method="post" action="<?php echo Route::_('index.php?option=com_isorairc&view=entries'); ?>">
+													<input type="hidden" name="option" value="com_isorairc">
+													<input type="hidden" name="task" value="entries.certificate">
+													<input type="hidden" name="race" value="<?php echo (int) $this->race->id; ?>">
+													<input type="hidden" name="boat" value="<?php echo $this->escape($entry->boat); ?>">
+													<input type="hidden" name="sail" value="<?php echo $this->escape($entry->sail); ?>">
+													<input type="hidden" name="certificate" value="<?php echo $other; ?>">
+													<?php echo HTMLHelper::_('form.token'); ?>
+													<button type="submit">Use <?php echo $other; ?> certificate</button>
+												</form>
+											<?php endif; ?>
+											<?php if ($boatData) : ?>
+												<form class="isorairc-boatdata" method="post" action="<?php echo $this->escape($this->boatDataUrl); ?>" target="_blank" rel="noopener noreferrer">
+													<input type="hidden" name="<?php echo EntriesHelper::BOAT_DATA_FIELD; ?>" value="<?php echo $this->escape($entry->cert_no); ?>">
+													<button type="submit" title="Opens RORC's valid boat data page in a new tab, searched for certificate <?php echo $this->escape($entry->cert_no); ?>">Boat data on RORC &#8599;</button>
+												</form>
+											<?php endif; ?>
+											<form class="isorairc-close" method="dialog"><button type="submit">Close</button></form>
 										</dialog>
-									<?php endif; ?>
-									<?php if ($this->canManage) : ?>
-										<?php if ($entry->rating_note !== '') : ?>
-											<span class="isorairc-detail isorairc-flag"><?php echo $this->escape($entry->rating_note); ?></span>
-										<?php endif; ?>
-										<?php if ($entry->declared !== '') : ?>
-											<span class="isorairc-detail">On form: <?php echo $this->escape($entry->declared); ?></span>
-										<?php endif; ?>
-										<?php if ($entry->certificate_wanted === 'secondary' && $entry->certificate_set_at !== '') : ?>
-											<span class="isorairc-detail">Secondary chosen <?php echo HTMLHelper::_('date', $entry->certificate_set_at, $format); ?><?php echo $entry->certificate_set_by !== '' ? ' by ' . $this->escape($entry->certificate_set_by) : ''; ?></span>
-										<?php endif; ?>
-										<?php if ($entry->scheme === 'irc' && ($entry->has_secondary || $entry->certificate_wanted === 'secondary')) : ?>
-											<?php $other = $entry->certificate_wanted === 'secondary' ? 'primary' : 'secondary'; ?>
-											<form class="isorairc-cert" method="post" action="<?php echo Route::_('index.php?option=com_isorairc&view=entries'); ?>">
-												<input type="hidden" name="option" value="com_isorairc">
-												<input type="hidden" name="task" value="entries.certificate">
-												<input type="hidden" name="race" value="<?php echo (int) $this->race->id; ?>">
-												<input type="hidden" name="boat" value="<?php echo $this->escape($entry->boat); ?>">
-												<input type="hidden" name="sail" value="<?php echo $this->escape($entry->sail); ?>">
-												<input type="hidden" name="certificate" value="<?php echo $other; ?>">
-												<?php echo HTMLHelper::_('form.token'); ?>
-												<button type="submit">Use <?php echo $other; ?> certificate</button>
-											</form>
-										<?php endif; ?>
-										<?php if ($this->boatDataUrl !== '' && $entry->scheme === 'irc' && $entry->cert_no !== '') : ?>
-											<form class="isorairc-boatdata" method="post" action="<?php echo $this->escape($this->boatDataUrl); ?>" target="_blank" rel="noopener noreferrer">
-												<input type="hidden" name="<?php echo EntriesHelper::BOAT_DATA_FIELD; ?>" value="<?php echo $this->escape($entry->cert_no); ?>">
-												<button type="submit" title="Opens RORC's valid boat data page, searched for certificate <?php echo $this->escape($entry->cert_no); ?>">Boat data</button>
-											</form>
-										<?php endif; ?>
 									<?php endif; ?>
 								</td>
 								<?php if ($this->canManage) : ?>

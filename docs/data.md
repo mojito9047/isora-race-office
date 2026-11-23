@@ -1,6 +1,6 @@
 # ISORA Race Office: the stored rating data
 
-What ISORA Race Office keeps in the website's database, what each value means, and how another part of the Joomla site (a module, a plugin, another component, a script in a form) can read it. Written for version 1.7.1.
+What ISORA Race Office keeps in the website's database, what each value means, and how another part of the Joomla site (a module, a plugin, another component, a script in a form) can read it. Written for version 1.8.0.
 
 For a system outside the website, use the [API](api.md) instead.
 

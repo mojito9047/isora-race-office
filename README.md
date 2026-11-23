@@ -6,7 +6,7 @@ A Joomla extension for the Irish Sea Offshore Racing Association (ISORA) website
 
 - **Rating lookup.** Imports the published IRC and YTC rating lists every day and gives the site a page where anyone can look up a boat by name or sail number.
 - **Ratings frozen at the rating deadline.** For each race it keeps every boat's rating as it stood at that race's rating deadline (normally 7 days before the race, at 23:59). A certificate reissued after the deadline does not change the frozen rating.
-- **Race entries.** Reads the RSForm! Pro entry form and lists the boats entered for each race, with each boat's rating filled in and mismatches flagged. A pop-up shows details from each IRC boat's certificate. Race management see contact details, can download the list as CSV, and can put a boat on its secondary IRC certificate for a race.
+- **Race entries.** Reads the RSForm! Pro entry form and lists the boats entered for each race, with each boat's rating filled in and mismatches flagged. A Details window shows each IRC boat's certificate values, and a tag marks boats with two certificates. Race management see contact details, can download the list as CSV, and can put a boat on its secondary IRC certificate for a race.
 - **API.** A key-protected JSON feed of the races and the boats entered, for Crewmanager, which can also choose a boat's primary or secondary IRC certificate for a race until its rating deadline (`docs/api.md`).
 - **YB Tracking fleetsheet.** Produces YB's fleet information sheet for a race, filled in, including the serial number of a boat's own tracker when it gave one on the entry form.
 

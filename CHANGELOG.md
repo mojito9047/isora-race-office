@@ -2,6 +2,10 @@
 
 Changes to ISORA Race Office (Joomla package `pkg_isorairc`), newest first.
 
+## 1.7.1 (23 November 2026)
+
+- Fixed: after swapping a boat between its primary and secondary certificate, the confirmation ("Mojito is now on its secondary certificate for …") did not appear on the ISORA site, because the site's template has no place for Joomla's messages on that page. The Race entries page now shows it itself, in a green box above the race list (orange when nothing was changed). It is shown once, to the person who made the swap. The swap itself always worked.
+
 ## 1.7.0 (23 November 2026)
 
 - New: **primary or secondary IRC certificate, per race**. A boat is rated on its primary certificate unless its secondary one is chosen for that race. The choice is for one race and one boat, and it stays if the boat sends its entry form again.

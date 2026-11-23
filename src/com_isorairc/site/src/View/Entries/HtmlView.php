@@ -6,6 +6,7 @@ namespace Isora\Component\Isorairc\Site\View\Entries;
 
 use Isora\Component\Isorairc\Administrator\Helper\EntriesHelper;
 use Isora\Component\Isorairc\Administrator\Helper\RatingsHelper;
+use Isora\Component\Isorairc\Site\Controller\EntriesController;
 use Joomla\CMS\Factory;
 use Joomla\CMS\MVC\View\HtmlView as BaseHtmlView;
 
@@ -34,6 +35,9 @@ class HtmlView extends BaseHtmlView
     /** True for race management: adds contact details and the CSV download. */
     public $canManage = false;
 
+    /** The result of a certificate swap just made, as ['text' => ..., 'type' => success|warning], or null. Shown once. */
+    public $notice = null;
+
     /** Address of RORC's boat data page, or '' when the Boat data button is switched off. */
     public $boatDataUrl = '';
 
@@ -45,6 +49,13 @@ class HtmlView extends BaseHtmlView
         $this->configured = EntriesHelper::formId() > 0;
         $this->canManage  = (bool) $app->getIdentity()->authorise('core.manage', 'com_isorairc');
         $this->systems    = RatingsHelper::systems();
+
+        if ($this->canManage) {
+            $notice = $app->getUserState(EntriesController::NOTICE);
+            $app->setUserState(EntriesController::NOTICE, null);
+            $this->notice = \is_array($notice) && !empty($notice['text']) ? $notice : null;
+        }
+
         $this->boatDataUrl = EntriesHelper::boatDataUrl();
         $this->races      = $model->getRaces();
 

@@ -63,10 +63,16 @@ foreach ($this->entries as $entry) {
 	.com-isorairc-entries dialog.isorairc-dialog form button {
 		padding: 6px 16px; border: 1px solid #b8560f; border-radius: 4px; background: #e8731a; color: #fff; font: inherit; font-weight: 700; cursor: pointer;
 	}
+	/* The result of a certificate swap, shown by the page itself. */
+	.com-isorairc-entries .isorairc-notice { margin: 0 0 14px; padding: 10px 14px; border: 1px solid #2e7d32; border-left-width: 5px; border-radius: 4px; background: #edf7ed; color: #1b4d1e; font-weight: 700; }
+	.com-isorairc-entries .isorairc-notice-warning { border-color: #b8560f; background: #fff4e5; color: #6b3200; }
 	.com-isorairc-entries .isorairc-contact { min-width: 18em; overflow-wrap: anywhere; }
 	.com-isorairc-entries table th, .com-isorairc-entries table td { vertical-align: top; }
 </style>
 <div class="com-isorairc-entries">
+	<?php if ($this->notice) : ?>
+		<p class="isorairc-notice<?php echo ($this->notice['type'] ?? '') === 'warning' ? ' isorairc-notice-warning' : ''; ?>" role="status"><?php echo $this->escape($this->notice['text']); ?></p>
+	<?php endif; ?>
 	<?php if (!$this->configured) : ?>
 		<p>The entry form has not been chosen yet. Set it under ISORA Race Office &rarr; Options &rarr; Entry form.</p>
 	<?php elseif (!$this->races) : ?>

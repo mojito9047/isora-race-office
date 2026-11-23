@@ -12,6 +12,13 @@ use Joomla\CMS\Router\Route;
 class EntriesController extends BaseController
 {
     /**
+     * Where the result of a certificate swap waits for the Race entries page to
+     * show it. The page shows it itself: the site's template has no place for
+     * Joomla's own messages on that page.
+     */
+    public const NOTICE = 'com_isorairc.entries.notice';
+
+    /**
      * Race management only: download one race's entries, with contact details, as CSV.
      */
     public function export()
@@ -111,13 +118,15 @@ class EntriesController extends BaseController
         $back = Route::_('index.php?option=com_isorairc&view=entries&race=' . (int) $race->id, false);
 
         if ($certificate === 'secondary' && !$found->has_secondary) {
-            $this->setRedirect($back, $found->boat . ' has no secondary certificate on the IRC list.', 'warning');
+            $this->app->setUserState(self::NOTICE, ['text' => $found->boat . ' has no secondary certificate on the IRC list. Nothing was changed.', 'type' => 'warning']);
+            $this->setRedirect($back);
 
             return;
         }
 
         EntriesHelper::setCertificate((int) $race->id, $found->boat, $found->sail, $certificate, (string) $this->app->getIdentity()->name);
-        $this->setRedirect($back, $found->boat . ' is now on its ' . $certificate . ' certificate for ' . $race->name . '.');
+        $this->app->setUserState(self::NOTICE, ['text' => $found->boat . ' is now on its ' . $certificate . ' certificate for ' . $race->name . '.', 'type' => 'success']);
+        $this->setRedirect($back);
     }
 
     /**

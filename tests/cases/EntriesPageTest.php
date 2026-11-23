@@ -193,7 +193,8 @@ class EntriesPageTest extends SiteTest
         $after = $this->swap($office, $page, 'Mojito', 'GBR 4822R', 'secondary');
         $this->assertSame(200, $after->status);
         $this->assertNoPhpErrors($after);
-        $this->assertContains('Mojito is now on its secondary certificate for Race 1.', $after->body);
+        $this->assertContains('<p class="isorairc-notice" role="status">Mojito is now on its secondary certificate for Race 1.</p>', $after->component('com-isorairc-entries'), 'Confirmed on the page itself');
+        $this->assertSame(1, substr_count($after->body, 'Mojito is now on its secondary certificate'), 'Said once, not also in the template\'s message area');
         $this->assertContains('race=' . $this->race, $after->url, 'Back on the same race');
 
         $page = $this->page($office);
@@ -202,10 +203,34 @@ class EntriesPageTest extends SiteTest
         $this->assertContains('<button type="submit">Use primary certificate</button>', $page->body);
         $this->assertContains('name="pdf_search" value="200"', $page->body, 'Boat data is searched for the secondary certificate');
 
-        $this->swap($office, $page, 'Mojito', 'GBR 4822R', 'primary');
+        $this->assertNotContains('isorairc-notice"', $page->body, 'The confirmation is shown once, not again on the next visit');
+
+        $back = $this->swap($office, $page, 'Mojito', 'GBR 4822R', 'primary');
+        $this->assertContains('Mojito is now on its primary certificate for Race 1.', $back->component('com-isorairc-entries'));
         $page = $this->page($office);
         $this->assertContains('Mojito GBR 4822R J/109 IRC Test Yacht Club 1.084', $page->text());
         $this->assertNotContains('Secondary certificate', $page->text());
+    }
+
+    public function testSwapConfirmationIsOnlyShownToTheOneWhoMadeTheSwap(): void
+    {
+        $this->twoCertificates();
+        $office = $this->browser('office');
+        $page   = $this->page($office);
+
+        // The swap is made, but its answer is not followed to the page...
+        $office->post(self::PAGE, [
+            'option' => 'com_isorairc', 'task' => 'entries.certificate', 'race' => $this->race,
+            'boat' => 'Mojito', 'sail' => 'GBR 4822R', 'certificate' => 'secondary', $office->token($page->body) => 1,
+        ], false);
+
+        // ...so it is still waiting. Nobody else gets it,
+        $this->assertNotContains('isorairc-notice"', $this->page($this->browser())->body, 'The public');
+        $this->assertNotContains('isorairc-notice"', $this->page($this->browser('registered'))->body, 'A member');
+
+        // and the one who made the swap gets it on their next visit.
+        $this->assertContains('Mojito is now on its secondary certificate for Race 1.', $this->page($office)->body);
+        $this->assertNotContains('isorairc-notice"', $this->page($office)->body, 'And only once');
     }
 
     public function testEveryoneSeesThatABoatIsOnItsSecondaryCertificateButOnlyRaceManagementCanSwap(): void
@@ -238,7 +263,7 @@ class EntriesPageTest extends SiteTest
 
         $this->assertContains('Use secondary certificate', $page->body);
         $after = $this->swap($office, $page, 'Mojito', 'GBR 4822R', 'secondary', $past);
-        $this->assertContains('Mojito is now on its secondary certificate for Sailed.', $after->body);
+        $this->assertContains('Mojito is now on its secondary certificate for Sailed.', $after->component('com-isorairc-entries'));
         $this->assertContains('IRC Test Yacht Club 1.052 Secondary certificate', $this->page($office, $past)->text());
     }
 
@@ -279,7 +304,7 @@ class EntriesPageTest extends SiteTest
         $this->assertSame(404, $this->swap($office, $page, 'Mojito', 'GBR 4822R', 'tertiary')->status);
 
         $none = $this->swap($office, $page, 'Sea Breeze', 'IRL 1234', 'secondary');
-        $this->assertContains('Sea Breeze has no secondary certificate on the IRC list.', $none->body);
+        $this->assertContains('<p class="isorairc-notice isorairc-notice-warning" role="status">Sea Breeze has no secondary certificate on the IRC list. Nothing was changed.</p>', $none->component('com-isorairc-entries'));
 
         $this->assertCount(0, Env::rows('#__isorairc_cert_choices'));
     }

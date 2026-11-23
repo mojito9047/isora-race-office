@@ -1,6 +1,6 @@
 # ISORA Race Office: guide for race organisers
 
-How to use the Race entries page on the ISORA website in the run-up to a race: checking the entries and their ratings, changing a boat's certificate, and downloading the entry list and the YB fleetsheet. Written for version 1.7.0.
+How to use the Race entries page on the ISORA website in the run-up to a race: checking the entries and their ratings, changing a boat's certificate, and downloading the entry list and the YB fleetsheet. Written for version 1.7.1.
 
 Setting the extension up (races, the entry form, permissions) is in the [admin guide](admin-guide.md).
 
@@ -75,7 +75,7 @@ Some IRC boats hold two certificates. A boat is rated on its primary certificate
 To change it:
 
 1. Choose the race.
-2. Under the boat's rating, click **Use secondary certificate**. The page reloads with the secondary rating and "Secondary certificate" under it.
+2. Under the boat's rating, click **Use secondary certificate**. The page reloads with a green confirmation at the top, the secondary rating, and "Secondary certificate" under it.
 3. To go back, click **Use primary certificate**.
 
 Things to know:

@@ -26,6 +26,7 @@ class RatingsHelper
     public const DB_COLUMNS = [
         'boat_name', 'sail_no', 'boat_type', 'club', 'tcc', 'non_spi_tcc', 'cert_no', 'issue_date',
         'cert_year', 'endorsed', 'secondary', 'crew', 'valid_code', 'provisional',
+        'headsails', 'flying_headsails', 'spinnakers', 'sss_base',
     ];
 
     /**
@@ -62,6 +63,10 @@ class RatingsHelper
                     'secondary'   => 'Secondary',
                     'non_spi_tcc' => 'Non Spi TCC',
                     'crew'        => 'Crew',
+                    'headsails'   => 'Headsails',
+                    'flying_headsails' => 'Flying Headsails',
+                    'spinnakers'  => 'Spinnakers',
+                    'sss_base'    => 'SSS Base Value',
                     'valid_code'  => 'ValidCode',
                 ],
             ],
@@ -546,6 +551,11 @@ class RatingsHelper
                 if (!is_numeric($row[$numeric])) {
                     $row[$numeric] = '';
                 }
+            }
+
+            // Counts are whole numbers; anything else is stored as "no value".
+            foreach (['headsails', 'flying_headsails', 'spinnakers', 'sss_base'] as $count) {
+                $row[$count] = preg_match('/^\d{1,4}$/', $row[$count]) ? $row[$count] : '';
             }
 
             $rows[] = $row;

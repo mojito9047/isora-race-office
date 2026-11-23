@@ -249,6 +249,57 @@ class EntriesTest extends SiteTest
         $this->assertSame('', $entry->tracker, 'A form sent before the tracker questions were added');
     }
 
+    public function testIrcBoatHasTheDetailsOfItsCertificate(): void
+    {
+        Env::addRating('irc', 'Sea Breeze', 'IRL1234', 1.045, null, [
+            'issue_date' => '2026-03-15', 'crew' => 9, 'headsails' => 3, 'flying_headsails' => 0, 'spinnakers' => 4, 'sss_base' => 32,
+        ]);
+        Env::submit(Env::boat(['Boat_Name' => 'Sea Breeze', 'Sail_Number' => 'IRL 1234']));
+        $entry = $this->entries()[0];
+
+        $this->assertSame(
+            ['2026-03-15', '9', '3', '0', '4', '32'],
+            [$entry->issue_date, $entry->crew, $entry->headsails, $entry->flying_headsails, $entry->spinnakers, $entry->sss_base]
+        );
+        $this->assertTrue(EntriesHelper::hasIrcDetails($entry));
+        $this->assertSame(['issue_date', 'crew', 'headsails', 'flying_headsails', 'spinnakers', 'sss_base'], array_keys(EntriesHelper::IRC_DETAILS));
+    }
+
+    public function testCertificateDetailsAreEmptyForUnlistedAndYtcBoats(): void
+    {
+        Env::addRating('ytc', 'Slow Coach', 'GBR55', 845, null, ['issue_date' => '2026-04-01']);
+        Env::addRating('irc', 'Bare Row', 'IRL2', 1.000);
+        Env::submit(Env::boat(['Boat_Name' => 'Slow Coach', 'Sail_Number' => 'GBR 55', 'Class_Racing' => 'YTC']));
+        Env::submit(Env::boat(['Boat_Name' => 'Unlisted', 'Sail_Number' => 'IRL 777']));
+        Env::submit(Env::boat(['Boat_Name' => 'Bare Row', 'Sail_Number' => 'IRL 2']));
+        $entries = $this->entries();
+
+        $this->assertCount(3, $entries);
+
+        foreach ($entries as $entry) {
+            $this->assertSame(
+                ['', '', '', '', '', ''],
+                [$entry->issue_date, $entry->crew, $entry->headsails, $entry->flying_headsails, $entry->spinnakers, $entry->sss_base],
+                $entry->boat
+            );
+            $this->assertFalse(EntriesHelper::hasIrcDetails($entry), $entry->boat);
+        }
+    }
+
+    public function testCertificateDetailsComeFromTheFrozenListOnceTheRaceIsFrozen(): void
+    {
+        Env::addRating('irc', 'Sea Breeze', 'IRL1234', 1.050, null, ['issue_date' => '2027-04-30', 'crew' => 10, 'spinnakers' => 5]);
+        Env::addRating('irc', 'Sea Breeze', 'IRL1234', 1.045, null, ['issue_date' => '2026-03-15', 'crew' => 9, 'spinnakers' => 4], $this->race);
+        Env::submit(Env::boat(['Boat_Name' => 'Sea Breeze', 'Sail_Number' => 'IRL 1234']));
+
+        $now = $this->entries()[0];
+        $this->assertSame(['2027-04-30', '10', '5'], [$now->issue_date, $now->crew, $now->spinnakers]);
+
+        Env::freeze($this->race, 'irc');
+        $frozen = $this->entries()[0];
+        $this->assertSame(['2026-03-15', '9', '4'], [$frozen->issue_date, $frozen->crew, $frozen->spinnakers]);
+    }
+
     public function testBoatUsingItsOwnTrackerHasItsSerialNumber(): void
     {
         Env::submit(Env::boat(['OwnTracker' => 'Yes', 'TrackerSerialNumber' => ' 0412345 ']));

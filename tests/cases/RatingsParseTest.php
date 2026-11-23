@@ -85,6 +85,37 @@ class RatingsParseTest extends SiteTest
         $this->assertSame('', $rows[0]['club'], 'Column the IRC list does not have');
     }
 
+    public function testIrcSailCountsAndSssBaseValueAreRead(): void
+    {
+        // Version 1.6.0. The columns sit among others (DLR, LH, STIX...) that are not kept.
+        $csv = Env::ircCsv([
+            ['Boat Name' => 'Sea Breeze', 'TCC' => '1.045', 'Crew' => '9', 'DLR' => '220', 'Single Furling Headsail' => 'No', 'Headsails' => '3', 'Flying Headsails' => '1', 'Spinnakers' => '4', 'SSS Base Value' => '32', 'STIX' => '33'],
+            ['Boat Name' => 'None Aboard', 'TCC' => '1.000', 'Headsails' => '0', 'Flying Headsails' => '0', 'Spinnakers' => '0', 'SSS Base Value' => '0'],
+            ['Boat Name' => 'Odd Values', 'TCC' => '1.000', 'Headsails' => 'two', 'Flying Headsails' => '', 'Spinnakers' => '-1', 'SSS Base Value' => '1.5'],
+        ], 0);
+        $rows = RatingsHelper::parse($csv, $this->irc());
+
+        $this->assertSame(['3', '1', '4', '32'], [$rows[0]['headsails'], $rows[0]['flying_headsails'], $rows[0]['spinnakers'], $rows[0]['sss_base']]);
+        $this->assertSame(['0', '0', '0', '0'], [$rows[1]['headsails'], $rows[1]['flying_headsails'], $rows[1]['spinnakers'], $rows[1]['sss_base']], 'Nought is a value');
+        $this->assertSame(['', '', '', ''], [$rows[2]['headsails'], $rows[2]['flying_headsails'], $rows[2]['spinnakers'], $rows[2]['sss_base']], 'Anything but a whole number is no value');
+    }
+
+    public function testOlderIrcListWithoutTheSailColumnsStillReads(): void
+    {
+        $rows = RatingsHelper::parse("Boat Name,Sail No,TCC,Crew\nSea Breeze,IRL1234,1.045,9\n", $this->irc());
+
+        $this->assertSame('9', $rows[0]['crew']);
+        $this->assertSame('', $rows[0]['headsails']);
+        $this->assertSame('', $rows[0]['sss_base']);
+    }
+
+    public function testYtcListDoesNotFillTheIrcSailColumns(): void
+    {
+        $row = RatingsHelper::parse(Env::ytcCsv([['EntryID' => '77', 'Boat Name' => 'Slow Coach', 'YTC' => '845']], 0), $this->ytc())[0];
+
+        $this->assertSame(['', '', '', ''], [$row['headsails'], $row['flying_headsails'], $row['spinnakers'], $row['sss_base']]);
+    }
+
     public function testYtcRowIsReadIntoTheRightColumns(): void
     {
         $csv = Env::ytcCsv([[

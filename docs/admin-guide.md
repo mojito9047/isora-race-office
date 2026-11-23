@@ -1,6 +1,6 @@
 # ISORA Race Office: admin guide
 
-How to install the ISORA Race Office extension on the ISORA Joomla site and set it up. Written for version 1.5.0.
+How to install the ISORA Race Office extension on the ISORA Joomla site and set it up. Written for version 1.6.0.
 
 ## What it does
 
@@ -166,9 +166,9 @@ Same as step 6, but choose **ISORA Race Office → Race entries**.
 
 ## 8. Who sees what
 
-The public version of the Race entries page shows boat, sail number, type, class, club and rating.
+The public version of the Race entries page shows boat, sail number, type, class, club and rating. Under the rating of each IRC boat that is on the rating list there is an **IRC data** link, which opens a small window with details from the boat's certificate: issue date, crew, headsails, flying headsails, spinnakers and SSS base value. These are the values RORC publish in the IRC list, the current ones until the race's rating deadline and the frozen ones afterwards. A dash means the list has no value.
 
-People who are allowed to manage the component also see, in the same table, a note under any rating that needs checking, the rating typed on the form, a Contact column (person in charge, mobile, e-mail) and an Entry column (entry type, when the form was sent and, for a boat using its own tracker, the tracker number; "no number given" means the boat answered Yes but left the number empty). The CSV download also has the serial number of a boat's own tracker. They also get two orange buttons above the table: **Download CSV** and **Download YB fleetsheet** (step 9).
+People who are allowed to manage the component also see, in the same table, a note under any rating that needs checking, the rating typed on the form, a Contact column (person in charge, mobile, e-mail) and an Entry column (entry type, when the form was sent and, for a boat using its own tracker, the tracker number; "no number given" means the boat answered Yes but left the number empty). The CSV download also has the serial number of a boat's own tracker and, for IRC boats, the six certificate details from the IRC data window, each in its own column. They also get two orange buttons above the table: **Download CSV** and **Download YB fleetsheet** (step 9).
 
 - Under the rating of each IRC boat they also get a **Boat data** link. It opens RORC's "Boat data for valid IRC certificates" page in a new tab, already searched for that boat's certificate number, with a Download link for the boat's data sheet. RORC only list certificates that are valid now, so for a race whose ratings are frozen, a boat whose certificate has since been reissued may give no result; search for its sail number on that page instead.
 - That permission is **Access Administration Interface** for ISORA Race Office, set under **Components → ISORA Race Office → Options → Permissions**. Super Users always have it.

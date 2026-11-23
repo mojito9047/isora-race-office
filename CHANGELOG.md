@@ -2,6 +2,12 @@
 
 Changes to ISORA Race Office (Joomla package `pkg_isorairc`), newest first.
 
+## 1.6.0 (23 November 2026)
+
+- New: **IRC data pop-up** on the Race entries page. Each IRC boat that is on the rating list has an **IRC data** link under its rating. It opens a small window with the boat's certificate details: issue date, crew, headsails, flying headsails, spinnakers and SSS base value. Everyone who can see the page gets it; the values are the ones RORC publish. For a race whose ratings are frozen, the values are the frozen ones.
+- The CSV download has six new columns after the declared rating: **IRC issue date**, **IRC crew**, **IRC headsails**, **IRC flying headsails**, **IRC spinnakers** and **IRC SSS base value**. They are empty for YTC boats and for boats not on the IRC list.
+- The import now keeps the headsail, flying headsail and spinnaker counts and the SSS base value from the IRC list (issue date and crew were kept already). **After updating, run the import once** (Components → ISORA Race Office → Import ratings now) or wait for the daily import; until then the four new values show as a dash. A race frozen before this version shows them as a dash until its snapshot is rebuilt. The frozen-ratings CSV download in the administrator area has the four new columns too.
+
 ## 1.5.0 (23 November 2026)
 
 - New: **API for Crewmanager**. Another system can read the races and the boats entered for each one as JSON, so that crew lists and declarations can be tied to the entry list. It is read-only and needs a key, set on the new **API** tab of the options; with no key set the API is off. Each boat comes with its sail number, type, class, club, rating and its person in charge (name, e-mail, mobile). The addresses and the layout of the answers are in `docs/api.md`.

@@ -158,6 +158,78 @@ class EntriesPageTest extends SiteTest
         }
     }
 
+    // ------------------------------------------------------------ IRC data pop-up
+
+    private function ircBoat(array $details = ['issue_date' => '2026-03-15', 'crew' => 9, 'headsails' => 3, 'flying_headsails' => 0, 'spinnakers' => 4, 'sss_base' => 32]): void
+    {
+        Env::addRating('irc', 'Sea Breeze', 'IRL1234', 1.045, null, $details);
+        Env::submit(Env::boat(['Boat_Name' => 'Sea Breeze', 'Sail_Number' => 'IRL 1234']));
+    }
+
+    public function testEveryoneGetsAnIrcDataPopUpForARatedIrcBoat(): void
+    {
+        $this->ircBoat();
+
+        foreach (['', 'registered', 'office'] as $who) {
+            $page = $this->page($this->browser($who));
+            $what = 'Page for ' . ($who ?: 'the public');
+
+            $this->assertContains('<button type="button" class="isorairc-ircdata" aria-haspopup="dialog" onclick="this.nextElementSibling.showModal()">IRC data</button>', $page->body, $what);
+            $this->assertSame(1, substr_count($page->body, '<dialog class="isorairc-dialog"'), $what);
+            $this->assertContains(
+                "IRC data Sea Breeze IRL 1234 From the boat's IRC certificate, on the current list. Issue date 15 Mar 2026 Crew 9 Headsails 3 Flying headsails 0 Spinnakers 4 SSS base value 32 Close",
+                $page->text(),
+                $what
+            );
+            $this->assertContains('<form method="dialog"><button type="submit">Close</button></form>', $page->body, $what);
+        }
+    }
+
+    public function testPopUpIsOnlyForBoatsWithIrcCertificateDetails(): void
+    {
+        $this->ircBoat();
+        Env::addRating('ytc', 'Slow Coach', 'GBR55', 845, null, ['issue_date' => '2026-04-01']);
+        Env::addRating('irc', 'Bare Row', 'IRL2', 1.000);
+        Env::submit(Env::boat(['Boat_Name' => 'Slow Coach', 'Sail_Number' => 'GBR 55', 'Class_Racing' => 'YTC']));
+        Env::submit(Env::boat(['Boat_Name' => 'Unlisted', 'Sail_Number' => 'IRL 777']));
+        Env::submit(Env::boat(['Boat_Name' => 'Bare Row', 'Sail_Number' => 'IRL 2']));
+        $page = $this->page($this->browser('office'));
+
+        $this->assertSame(1, substr_count($page->body, 'class="isorairc-ircdata"'), 'One button: for the IRC boat with details');
+        $this->assertSame(1, substr_count($page->body, '<dialog'));
+    }
+
+    public function testPopUpShowsADashForAValueTheListDoesNotHave(): void
+    {
+        // As straight after updating to 1.6.0, before the next import: only the older values are there.
+        $this->ircBoat(['issue_date' => '2026-03-15', 'crew' => 9]);
+        $text = $this->page($this->browser())->text();
+
+        $this->assertContains('Issue date 15 Mar 2026 Crew 9 Headsails – Flying headsails – Spinnakers – SSS base value – Close', $text);
+    }
+
+    public function testPopUpSaysWhenItsValuesAreTheFrozenOnes(): void
+    {
+        Env::addRating('irc', 'Sea Breeze', 'IRL1234', 1.045, null, ['issue_date' => '2026-03-15', 'crew' => 9, 'spinnakers' => 4], $this->race);
+        $this->ircBoat(['issue_date' => '2027-04-30', 'crew' => 10, 'spinnakers' => 5]);
+        Env::freeze($this->race, 'irc');
+        $text = $this->page($this->browser())->text();
+
+        $this->assertContains("From the boat's IRC certificate, as frozen at the rating deadline. Issue date 15 Mar 2026 Crew 9", $text);
+        $this->assertNotContains('30 Apr 2027', $text);
+    }
+
+    public function testPopUpShowsABoatNameSafely(): void
+    {
+        Env::addRating('irc', '<b>"Bold"</b>', 'IRL9', 1.000, null, ['crew' => 6]);
+        Env::submit(Env::boat(['Boat_Name' => '<b>"Bold"</b>', 'Sail_Number' => 'IRL 9']));
+        $page = $this->page($this->browser());
+
+        $this->assertContains('aria-label="IRC data for &lt;b&gt;&quot;Bold&quot;&lt;/b&gt;"', $page->body);
+        $this->assertContains('<h3>&lt;b&gt;&quot;Bold&quot;&lt;/b&gt; IRL 9</h3>', $page->body);
+        $this->assertNotContains('<b>"Bold"', $page->body);
+    }
+
     public function testRaceManagementGetABoatDataButtonForEachRatedIrcBoat(): void
     {
         Env::addRating('irc', 'Sea Breeze', 'IRL1234', 1.045, null, ['cert_no' => '41029']);
@@ -308,15 +380,33 @@ class EntriesPageTest extends SiteTest
 
         $rows = $this->csv($csv->body);
         $this->assertSame(
-            ['Boat', 'Sail No', 'Type', 'Class', 'Club', 'Rating', 'Rating note', 'Declared rating', 'Person in charge', 'Mobile', 'E-mail', 'Entry type', 'Own tracker serial', 'Form sent (UTC)'],
+            [
+                'Boat', 'Sail No', 'Type', 'Class', 'Club', 'Rating', 'Rating note', 'Declared rating',
+                'IRC issue date', 'IRC crew', 'IRC headsails', 'IRC flying headsails', 'IRC spinnakers', 'IRC SSS base value',
+                'Person in charge', 'Mobile', 'E-mail', 'Entry type', 'Own tracker serial', 'Form sent (UTC)',
+            ],
             $rows[0]
         );
         $this->assertSame(
-            ['Sea Breeze', 'IRL 1234', 'J/109', 'IRC', 'Test Yacht Club', '1.045', '', '1.039', 'Pat Skipper', "'+353 85 555 0100", 'pat.skipper@example.invalid', 'Season entry (all races)', '', '2026-10-01 10:00:00'],
+            ['Sea Breeze', 'IRL 1234', 'J/109', 'IRC', 'Test Yacht Club', '1.045', '', '1.039', '', '', '', '', '', '', 'Pat Skipper', "'+353 85 555 0100", 'pat.skipper@example.invalid', 'Season entry (all races)', '', '2026-10-01 10:00:00'],
             $rows[1]
         );
         $this->assertSame('Not found in the YTC list', $rows[2][6]);
         $this->assertCount(3, $rows);
+    }
+
+    public function testCsvHasTheIrcCertificateDetails(): void
+    {
+        $this->ircBoat();
+        Env::addRating('ytc', 'Slow Coach', 'GBR55', 845, null, ['issue_date' => '2026-04-01']);
+        Env::submit(Env::boat(['Boat_Name' => 'Slow Coach', 'Sail_Number' => 'GBR 55', 'Class_Racing' => 'YTC']));
+        $browser = $this->browser('office');
+        $rows    = $this->csv($browser->get($this->link($this->page($browser), 'Download CSV'))->body);
+        $from    = array_search('IRC issue date', $rows[0], true);
+
+        $this->assertSame(8, $from, 'Straight after the declared rating');
+        $this->assertSame(['2026-03-15', '9', '3', '0', '4', '32'], \array_slice($rows[1], $from, 6));
+        $this->assertSame(['', '', '', '', '', ''], \array_slice($rows[2], $from, 6), 'A YTC boat has no IRC details');
     }
 
     public function testOwnTrackerSerialIsInTheCsvButNotOnThePublicPage(): void
@@ -338,7 +428,7 @@ class EntriesPageTest extends SiteTest
         $this->assertSame('\'=HYPERLINK("http://bad.invalid","Click")', $row[0]);
         $this->assertSame("'@SUM(A1)", $row[4]);
         $this->assertSame('-1.5', $row[7], 'A plain negative number is left alone');
-        $this->assertSame("'-cmd", $row[8]);
+        $this->assertSame("'-cmd", $row[14]);
     }
 
     public function testCsvIsRefusedWithoutSigningIn(): void

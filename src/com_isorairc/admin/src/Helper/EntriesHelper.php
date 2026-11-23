@@ -34,6 +34,19 @@ class EntriesHelper
     /** RORC's page of boat data for valid IRC certificates. */
     public const DEFAULT_BOAT_DATA_URL = 'https://ircrating.org/boat-data-for-valid-irc-certificates/';
 
+    /**
+     * Details from a boat's IRC certificate that are shown with its entry,
+     * as entry property => label. Each is a column of the rating tables.
+     */
+    public const IRC_DETAILS = [
+        'issue_date'       => 'Issue date',
+        'crew'             => 'Crew',
+        'headsails'        => 'Headsails',
+        'flying_headsails' => 'Flying headsails',
+        'spinnakers'       => 'Spinnakers',
+        'sss_base'         => 'SSS base value',
+    ];
+
     /** Name of the search box on that page. */
     public const BOAT_DATA_FIELD = 'pdf_search';
 
@@ -171,7 +184,10 @@ class EntriesHelper
      * sail, model, class, club, declared, contact, email, phone, category,
      * country, photo, owntracker (the answer to "use your own tracker?"), tracker (the serial
      * number of the boat's own tracker, or '' when it is not using one), scheme, rating, rating_text, rating_status (ok|check|none|off), rating_note,
-     * cert_no (certificate number of the rating row the boat was matched to, or '').
+     * cert_no (certificate number of the rating row the boat was matched to, or ''),
+     * and for a boat matched to an IRC certificate the IRC_DETAILS (issue_date as
+     * YYYY-MM-DD, crew, headsails, flying_headsails, spinnakers, sss_base), each ''
+     * when the list has no value.
      *
      * @return object[]
      */
@@ -298,6 +314,11 @@ class EntriesHelper
             $entry->rating        = null;
             $entry->rating_text   = '';
             $entry->cert_no       = '';
+
+            foreach (array_keys(self::IRC_DETAILS) as $detail) {
+                $entry->$detail = '';
+            }
+
             $entry->rating_status = isset($systems[$entry->scheme]) ? 'none' : 'off';
             $entry->rating_note   = isset($systems[$entry->scheme]) ? 'Not found in the ' . $systems[$entry->scheme]['label'] . ' list' : '';
             $groups[$entry->scheme][] = $entry;
@@ -352,7 +373,7 @@ class EntriesHelper
         }
 
         $query = $db->getQuery(true)
-            ->select($db->quoteName(['boat_name', 'sail_no', 'tcc', 'non_spi_tcc', 'secondary', 'issue_date', 'cert_no']))
+            ->select($db->quoteName(array_merge(['boat_name', 'sail_no', 'tcc', 'non_spi_tcc', 'secondary', 'cert_no'], array_keys(self::IRC_DETAILS))))
             ->where($db->quoteName('scheme') . ' = ' . $db->quote($scheme))
             ->where('(' . implode(' OR ', array_unique($where)) . ')');
 
@@ -407,6 +428,12 @@ class EntriesHelper
 
         $entry->cert_no = trim((string) ($best->cert_no ?? ''));
 
+        if ($entry->scheme === 'irc') {
+            foreach (array_keys(self::IRC_DETAILS) as $detail) {
+                $entry->$detail = trim((string) ($best->$detail ?? ''));
+            }
+        }
+
         $nonSpinnaker = self::isNonSpinnaker($entry->class);
         $value        = $nonSpinnaker ? $best->non_spi_tcc : $best->tcc;
         $named        = ($score & 8) === 8;
@@ -432,6 +459,18 @@ class EntriesHelper
             $entry->rating_status = 'check';
             $entry->rating_note   = 'Sail number matches but the list has boat name ' . $best->boat_name;
         }
+    }
+
+    /** True when the entry has at least one detail from its IRC certificate. */
+    public static function hasIrcDetails(object $entry): bool
+    {
+        foreach (array_keys(self::IRC_DETAILS) as $detail) {
+            if (($entry->$detail ?? '') !== '') {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** True when a yes/no question on the entry form was answered yes. */

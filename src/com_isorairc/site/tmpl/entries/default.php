@@ -38,6 +38,27 @@ foreach ($this->entries as $entry) {
 	}
 	.com-isorairc-entries form.isorairc-boatdata button:hover,
 	.com-isorairc-entries form.isorairc-boatdata button:focus { color: #333; }
+	/* The IRC data button opens a pop-up with details from the boat's certificate. */
+	.com-isorairc-entries button.isorairc-ircdata {
+		display: block; padding: 0; border: 0; background: none; color: #b8560f; font: inherit; font-size: 0.9em; text-decoration: underline; cursor: pointer;
+	}
+	.com-isorairc-entries button.isorairc-ircdata:hover,
+	.com-isorairc-entries button.isorairc-ircdata:focus { color: #333; }
+	.com-isorairc-entries dialog.isorairc-dialog {
+		width: 22em; max-width: calc(100vw - 32px); padding: 18px 20px; border: 1px solid #999; border-radius: 6px;
+		background: #fff; color: #222; font-weight: 400; text-align: left; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+	}
+	.com-isorairc-entries dialog.isorairc-dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
+	.com-isorairc-entries dialog.isorairc-dialog h3 { margin: 0 0 4px; font-size: 1.15em; }
+	.com-isorairc-entries dialog.isorairc-dialog table { width: 100%; margin: 10px 0 14px; border-collapse: collapse; }
+	.com-isorairc-entries dialog.isorairc-dialog th,
+	.com-isorairc-entries dialog.isorairc-dialog td { padding: 5px 0; border: 0; border-bottom: 1px solid #ddd; background: none; color: inherit; text-align: left; }
+	.com-isorairc-entries dialog.isorairc-dialog th { font-weight: 400; }
+	.com-isorairc-entries dialog.isorairc-dialog td { font-weight: 700; text-align: right; }
+	.com-isorairc-entries dialog.isorairc-dialog form { margin: 0; text-align: right; }
+	.com-isorairc-entries dialog.isorairc-dialog form button {
+		padding: 6px 16px; border: 1px solid #b8560f; border-radius: 4px; background: #e8731a; color: #fff; font: inherit; font-weight: 700; cursor: pointer;
+	}
 	.com-isorairc-entries .isorairc-contact { min-width: 18em; overflow-wrap: anywhere; }
 	.com-isorairc-entries table th, .com-isorairc-entries table td { vertical-align: top; }
 </style>
@@ -129,6 +150,30 @@ foreach ($this->entries as $entry) {
 										<?php echo $this->escape($entry->rating_text); ?><?php echo $entry->rating_status === 'check' ? ' <span title="To be confirmed">?</span>' : ''; ?>
 									<?php elseif ($entry->rating_status !== 'off') : ?>
 										<span class="text-muted">Not listed</span>
+									<?php endif; ?>
+									<?php if ($entry->scheme === 'irc' && EntriesHelper::hasIrcDetails($entry)) : ?>
+										<button type="button" class="isorairc-ircdata" aria-haspopup="dialog" onclick="this.nextElementSibling.showModal()">IRC data</button>
+										<dialog class="isorairc-dialog" aria-label="IRC data for <?php echo $this->escape($entry->boat); ?>" onclick="if (event.target === this) { this.close(); }">
+											<h3><?php echo $this->escape(trim($entry->boat . ' ' . $entry->sail)); ?></h3>
+											<span class="isorairc-detail">From the boat's IRC certificate, <?php echo $this->sources['irc'] === 'snapshot' ? 'as frozen at the rating deadline' : 'on the current list'; ?>.</span>
+											<table>
+												<?php foreach (EntriesHelper::IRC_DETAILS as $detail => $label) : ?>
+													<tr>
+														<th scope="row"><?php echo $label; ?></th>
+														<td><?php
+															if ($entry->$detail === '') {
+																echo '&ndash;';
+															} elseif ($detail === 'issue_date') {
+																echo HTMLHelper::_('date', $entry->$detail, 'd M Y', 'UTC');
+															} else {
+																echo $this->escape($entry->$detail);
+															}
+														?></td>
+													</tr>
+												<?php endforeach; ?>
+											</table>
+											<form method="dialog"><button type="submit">Close</button></form>
+										</dialog>
 									<?php endif; ?>
 									<?php if ($this->canManage) : ?>
 										<?php if ($entry->rating_note !== '') : ?>

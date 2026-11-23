@@ -50,6 +50,22 @@ class ImportTest extends SiteTest
         $this->assertSame(9, (int) $row->crew);
     }
 
+    public function testSailCountsAndSssBaseValueAreStored(): void
+    {
+        Env::feed('irc', Env::ircCsv([
+            ['Boat Name' => 'Sea Breeze', 'Sail No' => 'IRL1234', 'TCC' => '1.045', 'Headsails' => '3', 'Flying Headsails' => '0', 'Spinnakers' => '4', 'SSS Base Value' => '32'],
+            ['Boat Name' => 'No Details', 'Sail No' => 'IRL1', 'TCC' => '1.000'],
+        ]));
+        RatingsHelper::run();
+
+        $row = Env::rating('irc', 'Sea Breeze');
+        $this->assertSame(['3', '0', '4', '32'], [(string) $row->headsails, (string) $row->flying_headsails, (string) $row->spinnakers, (string) $row->sss_base]);
+        $this->assertTrue($row->flying_headsails !== null, 'Nought is stored as nought, not as no value');
+
+        $blank = Env::rating('irc', 'No Details');
+        $this->assertSame([null, null, null, null], [$blank->headsails, $blank->flying_headsails, $blank->spinnakers, $blank->sss_base]);
+    }
+
     public function testNewDownloadReplacesTheOldRatings(): void
     {
         Env::feed('irc', Env::ircCsv([['Boat Name' => 'Leaving', 'Sail No' => '1', 'TCC' => '1.000']]));

@@ -315,8 +315,8 @@ class AdminTest extends SiteTest
         $this->assertContains('text/csv', $irc->header('content-type'));
         $this->assertContains('filename="irc-ratings-race-' . $race . '.csv"', $irc->header('content-disposition'));
         $lines = preg_split('/\R/', trim($irc->body));
-        $this->assertSame('"Boat Name","Sail No","Cert No","Issue Date","Cert Year",TCC,Endorsed,Secondary,"Non Spi TCC",Crew,ValidCode', $lines[0]);
-        $this->assertSame('"Sea Breeze",IRL1234,4411,2026-03-15,,1.050,,,1.021,,', $lines[1]);
+        $this->assertSame('"Boat Name","Sail No","Cert No","Issue Date","Cert Year",TCC,Endorsed,Secondary,"Non Spi TCC",Crew,Headsails,"Flying Headsails",Spinnakers,"SSS Base Value",ValidCode', $lines[0]);
+        $this->assertSame('"Sea Breeze",IRL1234,4411,2026-03-15,,1.050,,,1.021,,,,,,', $lines[1]);
         $this->assertCount(2, $lines, 'Only this system\'s boats');
 
         $ytc = $this->admin()->get('/administrator/index.php?option=com_isorairc&task=races.export&id=' . $race . '&scheme=ytc');

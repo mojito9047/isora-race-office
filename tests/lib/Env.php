@@ -136,7 +136,10 @@ class Env
      */
     public static function ircCsv(array $boats = [], int $filler = 120): string
     {
-        $columns = ['Boat Name', 'Sail No', 'Cert No', 'Issue Date', 'Cert Year', 'TCC', 'Endorsed', 'Secondary', 'Non Spi TCC', 'Crew', 'ValidCode'];
+        $columns = [
+            'Boat Name', 'Sail No', 'Cert No', 'Issue Date', 'Cert Year', 'TCC', 'Endorsed', 'Secondary', 'Non Spi TCC', 'Crew', 'DLR', 'LH', 'Beam', 'Draft',
+            'Single Furling Headsail', 'Headsails', 'Flying Headsails', 'Spinnakers', 'Series Date', 'Age Date', 'Racing Area', 'SSS Base Value', 'STIX', 'AVS', 'Category', 'ValidCode',
+        ];
 
         for ($i = 1; $i <= $filler; $i++) {
             $boats[] = [

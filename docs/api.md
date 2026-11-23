@@ -2,6 +2,28 @@
 
 A feed of ISORA's races and the boats entered for each one, for another system such as Crewmanager. Answers are JSON. Everything is read-only except one call: choosing which IRC certificate a boat uses for a race.
 
+## What you can do with it
+
+| You want to | Use | Section |
+|---|---|---|
+| List ISORA's races, with their dates and rating deadlines | `api.races` (GET) | [The races](#the-races) |
+| List the boats entered for one race | `api.entries` (GET) | [One race and its boats](#one-race-and-its-boats) |
+| Get every race with its boats in one request | `api.races` with `entries=1` (GET) | [The races](#the-races) |
+| See a boat's rating for a race, and whether the match to the rating list is certain | `rating` and `rating_confirmed` in the entries | [One race and its boats](#one-race-and-its-boats) |
+| See which IRC certificate a boat is on, and whether it has a secondary one to choose | `certificate` and `secondary_available` in the entries | [One race and its boats](#one-race-and-its-boats) |
+| Put a boat on its secondary IRC certificate for a race, or back on its primary | `api.certificate` (POST) | [Choosing a boat's certificate](#choosing-a-boats-certificate) |
+| Contact a boat's person in charge | `person_in_charge` in the entries | [One race and its boats](#one-race-and-its-boats) |
+
+What it cannot do:
+
+- **Enter or withdraw a boat.** Entries are made on ISORA's entry form only.
+- **Change anything except the certificate choice**, and that only until the race's rating deadline. After the deadline ISORA's race management can still change it, so read it back.
+- **Give a boat's crew list, tracker number or entry type.** Those are not in the feed.
+- **Give ratings of boats that are not entered**, or past ratings day by day.
+- **Tell you when something changes.** There are no notifications; fetch again (once an hour is plenty).
+
+How it works, in short: every request carries a secret key in a header, answers are JSON, times are in UTC, and a boat is identified by its name and sail number because entries have no ID.
+
 ## Key
 
 Every request must carry the API key. ISORA sets the key in the website's administrator area (**Components → ISORA Race Office → Options → API**) and passes it to you privately. Send it in a header, either of:

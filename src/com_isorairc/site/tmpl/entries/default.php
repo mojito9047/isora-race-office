@@ -158,6 +158,11 @@ foreach ($this->entries as $entry) {
 									<td>
 										<?php echo $this->escape(trim(preg_replace('/\s*\(.*$/s', '', $entry->category))); ?>
 										<span class="isorairc-detail">Sent <?php echo HTMLHelper::_('date', $entry->submitted, $format); ?></span>
+										<?php if ($entry->tracker !== '') : ?>
+											<span class="isorairc-detail">Own tracker: <?php echo $this->escape($entry->tracker); ?></span>
+										<?php elseif (EntriesHelper::saidYes($entry->owntracker)) : ?>
+											<span class="isorairc-detail isorairc-flag">Own tracker: no number given</span>
+										<?php endif; ?>
 									</td>
 								<?php endif; ?>
 							</tr>

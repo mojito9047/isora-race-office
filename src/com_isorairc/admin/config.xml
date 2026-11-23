@@ -213,6 +213,16 @@
 			default="TrackerSerialNumber"
 		/>
 	</fieldset>
+	<fieldset name="api" label="API" description="A read-only feed of the races and the boats entered for them, for another system such as Crewmanager. It includes each boat's person in charge with their e-mail and mobile number, so give the key only to systems that are allowed to hold those details. The addresses are in the admin guide.">
+		<field
+			name="api_key"
+			type="text"
+			label="API key"
+			description="The other system must send this key with every request. Use a long random key of at least 20 characters. Leave empty to switch the API off; change it to cut off a system that has the old key."
+			maxlength="200"
+			autocomplete="off"
+		/>
+	</fieldset>
 	<fieldset name="permissions" label="JCONFIG_PERMISSIONS_LABEL">
 		<field
 			name="rules"

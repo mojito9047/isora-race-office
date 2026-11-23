@@ -2,6 +2,11 @@
 
 Changes to ISORA Race Office (Joomla package `pkg_isorairc`), newest first.
 
+## 1.5.0 (23 November 2026)
+
+- New: **API for Crewmanager**. Another system can read the races and the boats entered for each one as JSON, so that crew lists and declarations can be tied to the entry list. It is read-only and needs a key, set on the new **API** tab of the options; with no key set the API is off. Each boat comes with its sail number, type, class, club, rating and its person in charge (name, e-mail, mobile). The addresses and the layout of the answers are in `docs/api.md`.
+- Race entries page, race management view: a boat using its own tracker now has **Own tracker:** and the number under its entry type, the number that goes in the fleetsheet's Tracker ID column. A boat that answered Yes but gave no number is flagged "Own tracker: no number given". The public and ordinary members do not see it.
+
 ## 1.4.6 (23 November 2026)
 
 - New: **boats using their own tracker**. The entry form now asks "Do you wish to use your own tracker" (field `OwnTracker`) and, if yes, for the tracker's serial number (field `TrackerSerialNumber`). The YB fleetsheet puts that number in the **Tracker ID** column for those boats; Serial is left empty, and boats without their own tracker still have both empty. A serial number is only used when the boat answered Yes. The two field names are new settings on the YB fleetsheet tab.

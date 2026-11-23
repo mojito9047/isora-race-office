@@ -130,6 +130,34 @@ class EntriesPageTest extends SiteTest
         $this->assertTrue($this->link($page, 'Download YB fleetsheet') !== '');
     }
 
+    public function testRaceManagementSeeABoatsOwnTrackerNumber(): void
+    {
+        Env::submit(Env::boat(['Boat_Name' => 'Has Tracker', 'Sail_Number' => '1', 'OwnTracker' => 'Yes', 'TrackerSerialNumber' => '0412345']));
+        Env::submit(Env::boat(['Boat_Name' => 'Forgot Number', 'Sail_Number' => '2', 'OwnTracker' => 'Yes', 'TrackerSerialNumber' => '']));
+        Env::submit(Env::boat(['Boat_Name' => 'Said No', 'Sail_Number' => '3', 'OwnTracker' => 'No', 'TrackerSerialNumber' => '999888']));
+        Env::submit(Env::boat(['Boat_Name' => 'Tricky', 'Sail_Number' => '4', 'OwnTracker' => 'Yes', 'TrackerSerialNumber' => '<b>77</b>']));
+        $page = $this->page($this->browser('office'));
+        $text = $page->text();
+
+        $this->assertMatches('/Has Tracker .* Sent 01 Oct 2026 11:00 Own tracker: 0412345/', $text);
+        $this->assertMatches('/Forgot Number .* Sent 01 Oct 2026 11:00 Own tracker: no number given/', $text);
+        $this->assertNotContains('999888', $page->body, 'A number from a boat that said No');
+        $this->assertSame(3, substr_count($text, 'Own tracker:'));
+        $this->assertContains('Own tracker: &lt;b&gt;77&lt;/b&gt;', $page->body, 'Shown safely');
+        $this->assertNoPhpErrors($page, 'Race management page');
+    }
+
+    public function testPublicAndMembersDoNotSeeTrackerNumbers(): void
+    {
+        Env::submit(Env::boat(['OwnTracker' => 'Yes', 'TrackerSerialNumber' => '0412345']));
+
+        foreach (['', 'registered'] as $who) {
+            $page = $this->page($who === '' ? $this->browser() : $this->browser($who));
+            $this->assertNotContains('0412345', $page->body, 'Page for ' . ($who ?: 'the public'));
+            $this->assertNotContains('Own tracker', $page->body);
+        }
+    }
+
     public function testRaceManagementGetABoatDataButtonForEachRatedIrcBoat(): void
     {
         Env::addRating('irc', 'Sea Breeze', 'IRL1234', 1.045, null, ['cert_no' => '41029']);

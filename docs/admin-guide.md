@@ -1,6 +1,6 @@
 # ISORA Race Office: admin guide
 
-How to install the ISORA Race Office extension on the ISORA Joomla site and set it up. Written for version 1.4.6.
+How to install the ISORA Race Office extension on the ISORA Joomla site and set it up. Written for version 1.5.0.
 
 ## What it does
 
@@ -168,7 +168,7 @@ Same as step 6, but choose **ISORA Race Office → Race entries**.
 
 The public version of the Race entries page shows boat, sail number, type, class, club and rating.
 
-People who are allowed to manage the component also see, in the same table, a note under any rating that needs checking, the rating typed on the form, a Contact column (person in charge, mobile, e-mail) and an Entry column (entry type and when the form was sent). The CSV download also has the serial number of a boat's own tracker. They also get two orange buttons above the table: **Download CSV** and **Download YB fleetsheet** (step 9).
+People who are allowed to manage the component also see, in the same table, a note under any rating that needs checking, the rating typed on the form, a Contact column (person in charge, mobile, e-mail) and an Entry column (entry type, when the form was sent and, for a boat using its own tracker, the tracker number; "no number given" means the boat answered Yes but left the number empty). The CSV download also has the serial number of a boat's own tracker. They also get two orange buttons above the table: **Download CSV** and **Download YB fleetsheet** (step 9).
 
 - Under the rating of each IRC boat they also get a **Boat data** link. It opens RORC's "Boat data for valid IRC certificates" page in a new tab, already searched for that boat's certificate number, with a Download link for the boat's data sheet. RORC only list certificates that are valid now, so for a race whose ratings are frozen, a boat whose certificate has since been reissued may give no result; search for its sail number on that page instead.
 - That permission is **Access Administration Interface** for ISORA Race Office, set under **Components → ISORA Race Office → Options → Permissions**. Super Users always have it.
@@ -214,6 +214,20 @@ Download the sheet after the rating deadline if you want the frozen ratings in i
 | Field name: Yacht photograph | `Upload_Yacht_Photograph_` | The field's name on the entry form. |
 | Field name: Using own tracker? | `OwnTracker` | The name of the yes/no question on the entry form. |
 | Field name: Own tracker serial number | `TrackerSerialNumber` | The field's name on the entry form. Its answer goes in the Tracker ID column. |
+
+## 10. API for Crewmanager
+
+Another system, such as Crewmanager, can read the races and the boats entered for each one straight from the site. It can only read, and only with a key that you set.
+
+1. Make a long random key of at least 20 characters, for example with a password manager's generator. Use letters and digits.
+2. Go to **Components → ISORA Race Office → Options → API**, put it in **API key** and click **Save & Close**.
+3. Give the key and the file `docs/api.md` (addresses and the layout of the answers) to the people who run the other system. Send the key privately, not in a group e-mail.
+
+What the other system gets for each race: its name, date and rating deadline, and for each boat entered its name, sail number, type, class, club, rating and the person in charge with their e-mail address and mobile number. It does not get the entry type, the tracker number or anything else from the form.
+
+- Because the answers hold contact details, give the key only to a system that ISORA's privacy notice lets hold them.
+- To cut a system off, change the key. To switch the API off, empty the field. A key shorter than 20 characters also leaves it off.
+- Anyone who can open the options can read the key.
 
 ## Checks after setup
 

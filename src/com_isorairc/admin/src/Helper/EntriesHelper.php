@@ -435,7 +435,7 @@ class EntriesHelper
     }
 
     /** True when a yes/no question on the entry form was answered yes. */
-    private static function saidYes(string $answer): bool
+    public static function saidYes(string $answer): bool
     {
         $answer = mb_strtolower(trim($answer));
 

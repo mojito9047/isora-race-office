@@ -61,9 +61,12 @@ class Browser
         @unlink($this->jar);
     }
 
-    public function get(string $path, bool $follow = true): Response
+    /**
+     * @param string[] $headers Extra request headers, each as "Name: value"
+     */
+    public function get(string $path, bool $follow = true, array $headers = []): Response
     {
-        return $this->request($path, null, $follow);
+        return $this->request($path, null, $follow, $headers);
     }
 
     public function post(string $path, array $fields, bool $follow = true): Response
@@ -110,7 +113,7 @@ class Browser
         }
     }
 
-    private function request(string $path, ?array $fields, bool $follow): Response
+    private function request(string $path, ?array $fields, bool $follow, array $headers = []): Response
     {
         $response = new Response();
         $curl     = curl_init(preg_match('#^https?://#', $path) ? $path : Env::$siteUrl . $path);
@@ -133,6 +136,10 @@ class Browser
                 return \strlen($line);
             },
         ]);
+
+        if ($headers) {
+            curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
+        }
 
         if ($fields !== null) {
             curl_setopt($curl, CURLOPT_POST, true);

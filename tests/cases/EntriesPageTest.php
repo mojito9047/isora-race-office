@@ -280,15 +280,25 @@ class EntriesPageTest extends SiteTest
 
         $rows = $this->csv($csv->body);
         $this->assertSame(
-            ['Boat', 'Sail No', 'Type', 'Class', 'Club', 'Rating', 'Rating note', 'Declared rating', 'Person in charge', 'Mobile', 'E-mail', 'Entry type', 'Form sent (UTC)'],
+            ['Boat', 'Sail No', 'Type', 'Class', 'Club', 'Rating', 'Rating note', 'Declared rating', 'Person in charge', 'Mobile', 'E-mail', 'Entry type', 'Own tracker serial', 'Form sent (UTC)'],
             $rows[0]
         );
         $this->assertSame(
-            ['Sea Breeze', 'IRL 1234', 'J/109', 'IRC', 'Test Yacht Club', '1.045', '', '1.039', 'Pat Skipper', "'+353 85 555 0100", 'pat.skipper@example.invalid', 'Season entry (all races)', '2026-10-01 10:00:00'],
+            ['Sea Breeze', 'IRL 1234', 'J/109', 'IRC', 'Test Yacht Club', '1.045', '', '1.039', 'Pat Skipper', "'+353 85 555 0100", 'pat.skipper@example.invalid', 'Season entry (all races)', '', '2026-10-01 10:00:00'],
             $rows[1]
         );
         $this->assertSame('Not found in the YTC list', $rows[2][6]);
         $this->assertCount(3, $rows);
+    }
+
+    public function testOwnTrackerSerialIsInTheCsvButNotOnThePublicPage(): void
+    {
+        Env::submit(Env::boat(['OwnTracker' => 'Yes', 'TrackerSerialNumber' => '0412345']));
+        $browser = $this->browser('office');
+        $rows    = $this->csv($browser->get($this->link($this->page($browser), 'Download CSV'))->body);
+
+        $this->assertSame('0412345', $rows[1][array_search('Own tracker serial', $rows[0], true)]);
+        $this->assertNotContains('0412345', $this->page($this->browser())->body, 'Public page');
     }
 
     public function testCsvCannotSmuggleAFormulaIntoASpreadsheet(): void

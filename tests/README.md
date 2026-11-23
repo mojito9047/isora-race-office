@@ -11,9 +11,9 @@ Automated tests for ISORA Race Office. They check the extension the way it is re
 | Reading a rating list | `cases/RatingsParseTest.php` | Columns in any order; both date formats; accented names; rows without a rating skipped; a changed layout is reported by name. |
 | Importing | `cases/ImportTest.php` | Both lists import; a short list, a server error or a changed layout is refused and the old ratings are kept; every download is archived. |
 | Rating deadline | `cases/SnapshotTest.php` | Nothing is frozen before the deadline; a certificate reissued after the deadline keeps its old rating; a boat first rated after it is left out; summer time; rebuild from the archive. |
-| Entry form | `cases/EntriesTest.php` | Only boats that answered yes; a boat's latest form wins; later forms can add or withdraw a boat; only race questions are offered. |
+| Entry form | `cases/EntriesTest.php` | Only boats that answered yes; a boat's latest form wins; later forms can add or withdraw a boat; only race questions are offered; a boat's own tracker serial is read only when it answered yes. |
 | Matching ratings to entries | `cases/RatingMatchTest.php` | Name and sail number; sail number typed without its letters; doubtful matches flagged; non-spinnaker and YTC classes; frozen ratings used once frozen. |
-| YB fleetsheet | `cases/FleetsheetTest.php` | Class band limits; flag codes; two-handed group; YTC boats; the workbook itself, cell by cell; Serial and Tracker ID empty. |
+| YB fleetsheet | `cases/FleetsheetTest.php` | Class band limits; flag codes; two-handed group; YTC boats; the workbook itself, cell by cell; a boat's own tracker number in the Tracker ID column, otherwise Serial and Tracker ID empty. |
 | Rating lookup page | `cases/LookupPageTest.php` | Search by name and sail number; frozen ratings of a race; odd characters shown safely. |
 | Race entries page | `cases/EntriesPageTest.php` | The public and ordinary members never see contact details; race management does; the Boat data button; CSV and fleetsheet downloads, and that nobody else can get them. |
 | Admin screens | `cases/AdminTest.php` | Adding and editing races; the deadline worked out in Irish time, summer and winter; Import, Rebuild and Delete buttons; the options screen. |

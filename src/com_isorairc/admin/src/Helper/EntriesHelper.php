@@ -27,6 +27,8 @@ class EntriesHelper
         'entry_category_field' => 'Race_Entry_Categoy',
         'entry_country_field'  => 'Country',
         'entry_photo_field'    => 'Upload_Yacht_Photograph_',
+        'entry_owntracker_field' => 'OwnTracker',
+        'entry_tracker_field'  => 'TrackerSerialNumber',
     ];
 
     /** RORC's page of boat data for valid IRC certificates. */
@@ -62,7 +64,7 @@ class EntriesHelper
     }
 
     /**
-     * RSForm field names by role (boat, sail, model, class, club, declared, contact, email, phone, category, country, photo).
+     * RSForm field names by role (boat, sail, model, class, club, declared, contact, email, phone, category, country, photo, owntracker, tracker).
      *
      * @return array<string, string>
      */
@@ -118,7 +120,14 @@ class EntriesHelper
 
         $yes = mb_strtolower(self::yesValue());
 
+        // The "use your own tracker?" question is answered yes or no too, but is not a race.
+        $ownTracker = self::fields()['owntracker'];
+
         foreach ($byComponent as $properties) {
+            if (($properties['NAME'] ?? '') === $ownTracker) {
+                continue;
+            }
+
             // A race question is one that can be answered with the "entered" answer.
             // Items are one per line, as "value|label[flags]" or just "value".
             $answers = [];
@@ -160,7 +169,8 @@ class EntriesHelper
      * A boat that sent the form more than once counts once: its latest form
      * decides. Each entry is an object with: submission_id, submitted, boat,
      * sail, model, class, club, declared, contact, email, phone, category,
-     * country, photo, scheme, rating, rating_text, rating_status (ok|check|none|off), rating_note,
+     * country, photo, owntracker (the answer to "use your own tracker?"), tracker (the serial
+     * number of the boat's own tracker, or '' when it is not using one), scheme, rating, rating_text, rating_status (ok|check|none|off), rating_note,
      * cert_no (certificate number of the rating row the boat was matched to, or '').
      *
      * @return object[]
@@ -225,6 +235,9 @@ class EntriesHelper
             foreach ($fields as $role => $name) {
                 $entry->$role = $form['values'][$name] ?? '';
             }
+
+            // A serial number only counts when the boat said it is using its own tracker.
+            $entry->tracker = self::saidYes($entry->owntracker) ? $entry->tracker : '';
 
             $entries[] = $entry;
         }
@@ -419,6 +432,14 @@ class EntriesHelper
             $entry->rating_status = 'check';
             $entry->rating_note   = 'Sail number matches but the list has boat name ' . $best->boat_name;
         }
+    }
+
+    /** True when a yes/no question on the entry form was answered yes. */
+    private static function saidYes(string $answer): bool
+    {
+        $answer = mb_strtolower(trim($answer));
+
+        return $answer !== '' && ($answer === 'yes' || $answer === mb_strtolower(self::yesValue()));
     }
 
     /** Lower case letters and digits only, for comparing names and sail numbers. */

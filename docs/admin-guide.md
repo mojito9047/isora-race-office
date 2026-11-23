@@ -1,13 +1,13 @@
 # ISORA Race Office: admin guide
 
-How to install the ISORA Race Office extension on the ISORA Joomla site and set it up. Written for version 1.4.5.
+How to install the ISORA Race Office extension on the ISORA Joomla site and set it up. Written for version 1.4.6.
 
 ## What it does
 
 - **Rating lookup.** Downloads the published IRC and YTC rating lists once a day and gives the site a page where anyone can look up a boat by name or sail number.
 - **Ratings frozen at each race's deadline.** For every race you add, it keeps a copy of all ratings as they stood at that race's rating deadline. A certificate reissued after the deadline does not change the frozen rating.
 - **Race entries.** Reads the RSForm! Pro entry form and lists the boats entered for each race, with each boat's rating filled in from the lists.
-- **YB fleetsheet.** Lets race management download the YB Tracking fleet information sheet for a race, already filled in apart from the tracker numbers.
+- **YB fleetsheet.** Lets race management download the YB Tracking fleet information sheet for a race, already filled in. Boats using their own tracker have its serial number filled in; the other tracker numbers are left for you.
 
 The extension never changes the entry form or its submissions. It only reads them.
 
@@ -168,7 +168,7 @@ Same as step 6, but choose **ISORA Race Office → Race entries**.
 
 The public version of the Race entries page shows boat, sail number, type, class, club and rating.
 
-People who are allowed to manage the component also see, in the same table, a note under any rating that needs checking, the rating typed on the form, a Contact column (person in charge, mobile, e-mail) and an Entry column (entry type and when the form was sent). They also get two orange buttons above the table: **Download CSV** and **Download YB fleetsheet** (step 9).
+People who are allowed to manage the component also see, in the same table, a note under any rating that needs checking, the rating typed on the form, a Contact column (person in charge, mobile, e-mail) and an Entry column (entry type and when the form was sent). The CSV download also has the serial number of a boat's own tracker. They also get two orange buttons above the table: **Download CSV** and **Download YB fleetsheet** (step 9).
 
 - Under the rating of each IRC boat they also get a **Boat data** link. It opens RORC's "Boat data for valid IRC certificates" page in a new tab, already searched for that boat's certificate number, with a Download link for the boat's data sheet. RORC only list certificates that are valid now, so for a race whose ratings are frozen, a boat whose certificate has since been reissued may give no result; search for its sail number on that page instead.
 - That permission is **Access Administration Interface** for ISORA Race Office, set under **Components → ISORA Race Office → Options → Permissions**. Super Users always have it.
@@ -182,7 +182,8 @@ The file is YB's own workbook with one row per entered boat.
 
 | Column | Filled with |
 |---|---|
-| Serial, Tracker ID | Left empty. Add these by hand when the trackers are allocated. |
+| Serial | Left empty. |
+| Tracker ID | The number of the boat's own tracker, for boats that answered Yes to "Do you wish to use your own tracker" on the entry form and gave a number. Empty for every other boat; add these by hand when the trackers are allocated. |
 | Yacht Name, Model, Sail Number | From the entry form. |
 | Handicap (TCF 1) | The boat's IRC rating: the current one before the race's rating deadline, the frozen one after. Empty if the boat is not on the IRC list, and for YTC boats. |
 | Owner, Skipper | Both take the form's "Full Name(s)". |
@@ -195,6 +196,8 @@ The file is YB's own workbook with one row per entered boat.
 | IRC 2-Handed | X for boats entered in the 2-handed class. |
 
 YTC boats are listed so they can be given a tracker, but only get Line Honours.
+
+The tracker number is copied as the competitor typed it and is not checked. If a boat answered No, or did not answer, any number left in the serial box is ignored. A boat that sends the form again replaces its earlier answer, so it can add, change or withdraw its own tracker that way.
 
 Download the sheet after the rating deadline if you want the frozen ratings in it. Check any boat with an empty handicap before sending the sheet to YB; the Race entries page says why it has no rating.
 
@@ -209,6 +212,8 @@ Download the sheet after the rating deadline if you want the frozen ratings in i
 | Flag codes | `Ireland=IE`, `Northern Ireland=GB`, `England=GB`, `Wales=XW` | One line per country, spelled as on the entry form. Countries not listed are left blank on the sheet. |
 | Field name: Owner's country | `Country` | The field's name on the entry form. |
 | Field name: Yacht photograph | `Upload_Yacht_Photograph_` | The field's name on the entry form. |
+| Field name: Using own tracker? | `OwnTracker` | The name of the yes/no question on the entry form. |
+| Field name: Own tracker serial number | `TrackerSerialNumber` | The field's name on the entry form. Its answer goes in the Tracker ID column. |
 
 ## Checks after setup
 

@@ -160,7 +160,7 @@
 			default="Race_Entry_Categoy"
 		/>
 	</fieldset>
-	<fieldset name="fleetsheet" label="YB fleetsheet" description="Settings for the YB Tracking fleet information sheet that race management can download for each race from the Race entries page. The Serial and Tracker ID columns are left empty.">
+	<fieldset name="fleetsheet" label="YB fleetsheet" description="Settings for the YB Tracking fleet information sheet that race management can download for each race from the Race entries page. Tracker ID is filled in for boats using their own tracker; otherwise the Serial and Tracker ID columns are left empty.">
 		<field
 			name="fleet_type"
 			type="text"
@@ -197,6 +197,20 @@
 			label="Field name: Yacht photograph"
 			description="The name (not the caption) of this field on the entry form."
 			default="Upload_Yacht_Photograph_"
+		/>
+		<field
+			name="entry_owntracker_field"
+			type="text"
+			label="Field name: Using own tracker?"
+			description="The name (not the caption) of the yes/no question on the entry form that asks whether the boat will use its own tracker."
+			default="OwnTracker"
+		/>
+		<field
+			name="entry_tracker_field"
+			type="text"
+			label="Field name: Own tracker serial number"
+			description="The name (not the caption) of this field on the entry form. Its answer goes in the sheet's Tracker ID column, but only for boats that answered yes to the question above."
+			default="TrackerSerialNumber"
 		/>
 	</fieldset>
 	<fieldset name="permissions" label="JCONFIG_PERMISSIONS_LABEL">

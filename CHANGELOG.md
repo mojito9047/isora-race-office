@@ -2,6 +2,12 @@
 
 Changes to ISORA Race Office (Joomla package `pkg_isorairc`), newest first.
 
+## 1.4.6 (23 November 2026)
+
+- New: **boats using their own tracker**. The entry form now asks "Do you wish to use your own tracker" (field `OwnTracker`) and, if yes, for the tracker's serial number (field `TrackerSerialNumber`). The YB fleetsheet puts that number in the **Tracker ID** column for those boats; Serial is left empty, and boats without their own tracker still have both empty. A serial number is only used when the boat answered Yes. The two field names are new settings on the YB fleetsheet tab.
+- The CSV download has a new column, **Own tracker serial**.
+- The own-tracker question is not offered as a race question when linking a race, although it is answered Yes or No like one.
+
 ## 1.4.5 (22 November 2026)
 
 - New: race management get a **Boat data** button under each IRC boat's rating on the Race entries page. It opens RORC's "Boat data for valid IRC certificates" page in a new tab, searched for that boat's certificate number, where the boat's data sheet can be downloaded. The page's address is a new setting on the Rating sources tab; emptying it hides the button.

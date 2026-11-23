@@ -39,7 +39,9 @@ class EntriesTest extends SiteTest
         $this->assertSame('Sail_Number', $fields['sail']);
         $this->assertSame('Race_Entry_Categoy', $fields['category'], 'The real form spells it this way');
         $this->assertSame('Upload_Yacht_Photograph_', $fields['photo']);
-        $this->assertCount(12, $fields);
+        $this->assertSame('OwnTracker', $fields['owntracker']);
+        $this->assertSame('TrackerSerialNumber', $fields['tracker']);
+        $this->assertCount(14, $fields);
     }
 
     public function testFieldNamesCanBeChangedInTheOptions(): void
@@ -57,6 +59,23 @@ class EntriesTest extends SiteTest
             ['Race_1' => 'Race 1 - Dun Laoghaire to Holyhead', 'Race_2' => 'Race 2 - Holyhead to Dun Laoghaire'],
             EntriesHelper::raceFields()
         );
+    }
+
+    public function testOwnTrackerQuestionIsNotOfferedAsARace(): void
+    {
+        // It is answered Yes or No like a race question, but it is not a race.
+        Env::question('OwnTracker', 'Do you wish to use your own tracker');
+        Env::question('TrackerSerialNumber', 'Your Tracker Serial Number', 'textBox');
+
+        $this->assertSame(['Race_1', 'Race_2'], array_keys(EntriesHelper::raceFields()));
+    }
+
+    public function testRenamedOwnTrackerQuestionIsNotOfferedAsARaceEither(): void
+    {
+        Env::question('Own_YB', 'Bringing your own tracker?');
+        Env::setParams(['entry_owntracker_field' => 'Own_YB']);
+
+        $this->assertSame(['Race_1', 'Race_2'], array_keys(EntriesHelper::raceFields()));
     }
 
     public function testRaceQuestionsFollowTheEnteredAnswerSetting(): void
@@ -227,6 +246,46 @@ class EntriesTest extends SiteTest
         $this->assertSame('Season entry (all races)', $entry->category);
         $this->assertSame('Ireland', $entry->country);
         $this->assertSame('/var/www/site/components/com_rsform/uploads/boat.jpg', $entry->photo);
+        $this->assertSame('', $entry->tracker, 'A form sent before the tracker questions were added');
+    }
+
+    public function testBoatUsingItsOwnTrackerHasItsSerialNumber(): void
+    {
+        Env::submit(Env::boat(['OwnTracker' => 'Yes', 'TrackerSerialNumber' => ' 0412345 ']));
+        $entry = $this->entries()[0];
+
+        $this->assertSame('Yes', $entry->owntracker);
+        $this->assertSame('0412345', $entry->tracker);
+    }
+
+    public function testSerialNumberIsIgnoredUnlessTheBoatSaidItUsesItsOwnTracker(): void
+    {
+        // The serial box is hidden when "No" is chosen, but may still hold what was typed before.
+        Env::submit(Env::boat(['Boat_Name' => 'Said No', 'Sail_Number' => '1', 'OwnTracker' => 'No', 'TrackerSerialNumber' => '111']));
+        Env::submit(Env::boat(['Boat_Name' => 'No Answer', 'Sail_Number' => '2', 'OwnTracker' => '', 'TrackerSerialNumber' => '222']));
+        Env::submit(Env::boat(['Boat_Name' => 'Yes No Serial', 'Sail_Number' => '3', 'OwnTracker' => 'yes', 'TrackerSerialNumber' => '']));
+        Env::submit(Env::boat(['Boat_Name' => 'Yes Serial', 'Sail_Number' => '4', 'OwnTracker' => 'YES', 'TrackerSerialNumber' => '444']));
+
+        $this->assertSame(
+            ['No Answer' => '', 'Said No' => '', 'Yes No Serial' => '', 'Yes Serial' => '444'],
+            array_column($this->entries(), 'tracker', 'boat')
+        );
+    }
+
+    public function testLatestFormDecidesTheTracker(): void
+    {
+        Env::submit(Env::boat(['OwnTracker' => 'Yes', 'TrackerSerialNumber' => '111']), '2026-10-01 10:00:00');
+        Env::submit(Env::boat(['OwnTracker' => 'No', 'TrackerSerialNumber' => '']), '2026-10-02 10:00:00');
+
+        $this->assertSame('', $this->entries()[0]->tracker);
+    }
+
+    public function testTrackerFieldNamesCanBeChangedInTheOptions(): void
+    {
+        Env::setParams(['entry_owntracker_field' => 'Own_YB', 'entry_tracker_field' => 'YB_Serial']);
+        Env::submit(Env::boat(['Own_YB' => 'Yes', 'YB_Serial' => '555', 'OwnTracker' => 'Yes', 'TrackerSerialNumber' => '999']));
+
+        $this->assertSame('555', $this->entries()[0]->tracker);
     }
 
     public function testChangedFieldNamesAreUsed(): void

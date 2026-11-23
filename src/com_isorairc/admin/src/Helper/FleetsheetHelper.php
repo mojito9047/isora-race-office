@@ -13,8 +13,9 @@ use Joomla\CMS\Uri\Uri;
  *
  * The workbook is YB's own sheet with the boat rows emptied
  * (resources/yb-fleetsheet-template.xlsx); only the boat rows and the
- * leaderboard group headings are written. The Serial and Tracker ID columns
- * are left empty for whoever hands out the trackers.
+ * leaderboard group headings are written. Tracker ID is filled in for boats
+ * using their own tracker; otherwise Serial and Tracker ID are left empty
+ * for whoever hands out the trackers.
  */
 class FleetsheetHelper
 {
@@ -78,7 +79,7 @@ class FleetsheetHelper
 
     /**
      * The sheet's rows for a race's entries: one array per boat with the
-     * values for name, handicap, owner, skipper, type, model, flag, sail,
+     * values for tracker, name, handicap, owner, skipper, type, model, flag, sail,
      * image and the list of group headings the boat belongs to.
      *
      * @param object[] $entries from EntriesHelper::entries()
@@ -115,6 +116,8 @@ class FleetsheetHelper
             }
 
             $rows[] = [
+                // Only boats using their own tracker have a tracker number yet.
+                'tracker'  => trim((string) ($entry->tracker ?? '')),
                 'name'     => $entry->boat,
                 // YB's handicap columns are time correction factors, so only IRC goes in.
                 'handicap' => $isIrc ? $entry->rating : null,
@@ -249,6 +252,7 @@ class FleetsheetHelper
             }
 
             $values = $data ? [
+                2  => $data['tracker'],
                 3  => $data['name'],
                 4  => $data['handicap'],
                 7  => $data['owner'],

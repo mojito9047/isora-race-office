@@ -350,7 +350,7 @@ class AdminTest extends SiteTest
             $this->assertContains($tab, $page->body, 'Tab');
         }
 
-        foreach (['https://www.topyacht.com.au/rorc/data/ClubListing.csv', 'https://ircrating.org/boat-data-for-valid-irc-certificates/', '23:59', 'Boat_Name', 'Race_Entry_Categoy', 'MEDIUM MONOHULL', 'IRC Class 0=1.070', 'Wales=XW', 'Upload_Yacht_Photograph_'] as $default) {
+        foreach (['https://www.topyacht.com.au/rorc/data/ClubListing.csv', 'https://ircrating.org/boat-data-for-valid-irc-certificates/', '23:59', 'Boat_Name', 'Race_Entry_Categoy', 'MEDIUM MONOHULL', 'IRC Class 0=1.070', 'Wales=XW', 'Upload_Yacht_Photograph_', 'OwnTracker', 'TrackerSerialNumber'] as $default) {
             $this->assertContains($default, $page->body, 'Default value');
         }
 

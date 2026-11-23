@@ -16,7 +16,7 @@ class FleetsheetTest extends SiteTest
     {
         return (object) ($values + [
             'boat' => 'Sea Breeze', 'sail' => 'IRL 1234', 'model' => 'J/109', 'class' => 'IRC', 'contact' => 'Pat Skipper',
-            'country' => 'Ireland', 'photo' => '', 'scheme' => 'irc', 'rating' => 1.045,
+            'country' => 'Ireland', 'photo' => '', 'tracker' => '', 'scheme' => 'irc', 'rating' => 1.045,
         ]);
     }
 
@@ -268,7 +268,35 @@ class FleetsheetTest extends SiteTest
         $this->assertSame('text', $types['L7'] ?? null);
     }
 
-    public function testSerialAndTrackerIdAreLeftEmpty(): void
+    public function testOwnTrackersNumberGoesInTheTrackerIdColumn(): void
+    {
+        $cells = $this->cells(FleetsheetHelper::build([
+            $this->entry(['tracker' => '0412345']),
+            $this->entry(['boat' => 'Second']),
+            $this->entry(['boat' => 'Third', 'tracker' => ' YB3-7781 ']),
+        ]), $types);
+
+        $this->assertSame('0412345', $cells['B7'] ?? null, 'Tracker ID of the first boat');
+        $this->assertSame('text', $types['B7'] ?? null, 'So that leading zeros survive');
+        $this->assertFalse(isset($cells['B8']), 'A boat without its own tracker has no Tracker ID');
+        $this->assertSame('YB3-7781', $cells['B9'] ?? null);
+
+        foreach (['A7', 'A8', 'A9'] as $reference) {
+            $this->assertFalse(isset($cells[$reference]), 'Serial ' . $reference . ' has a value');
+        }
+
+        $this->assertSame('Sea Breeze', $cells['C7'] ?? null, 'The other columns have not moved');
+    }
+
+    public function testEntryWithoutTrackerDetailsStillBuilds(): void
+    {
+        $entry = $this->entry();
+        unset($entry->tracker);
+
+        $this->assertSame('', FleetsheetHelper::rows([$entry])[0]['tracker']);
+    }
+
+    public function testSerialAndTrackerIdAreLeftEmptyForBoatsWithoutTheirOwnTracker(): void
     {
         $cells = $this->cells(FleetsheetHelper::build([$this->entry(), $this->entry(['boat' => 'Second'])]));
 

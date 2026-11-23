@@ -31,6 +31,7 @@ class EntriesController extends BaseController
             'phone'       => 'Mobile',
             'email'       => 'E-mail',
             'category'    => 'Entry type',
+            'tracker'     => 'Own tracker serial',
             'submitted'   => 'Form sent (UTC)',
         ];
 

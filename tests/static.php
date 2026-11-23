@@ -122,6 +122,25 @@ class ProjectFilesTest extends TestCase
         $this->assertContains('Written for version ' . $this->version() . '.', $this->read('docs/admin-guide.md'));
     }
 
+    public function testDataDescriptionIsMarkedForThisVersion(): void
+    {
+        $this->assertContains('Written for version ' . $this->version() . '.', $this->read('docs/data.md'));
+    }
+
+    public function testGuideForRaceOrganisersIsMarkedForThisVersion(): void
+    {
+        $this->assertContains('Written for version ' . $this->version() . '.', $this->read('docs/race-office-guide.md'));
+    }
+
+    public function testEveryTableIsDescribedInTheDataDescription(): void
+    {
+        preg_match_all('/CREATE TABLE IF NOT EXISTS `([^`]+)`/', $this->read('src/com_isorairc/admin/sql/install.mysql.utf8.sql'), $created);
+
+        foreach ($created[1] as $table) {
+            $this->assertContains('`' . $table . '`', $this->read('docs/data.md'), 'docs/data.md');
+        }
+    }
+
     public function testComponentManifestListsEveryFolderAndFile(): void
     {
         $manifest = simplexml_load_string($this->read(self::MANIFESTS[0]));
@@ -174,7 +193,7 @@ class ProjectFilesTest extends TestCase
         sort($created[1]);
         sort($dropped[1]);
 
-        $this->assertCount(5, $created[1]);
+        $this->assertCount(6, $created[1]);
         $this->assertSame($created[1], $dropped[1]);
     }
 

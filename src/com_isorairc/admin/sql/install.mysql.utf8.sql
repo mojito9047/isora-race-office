@@ -93,3 +93,17 @@ CREATE TABLE IF NOT EXISTS `#__isorairc_imports` (
   PRIMARY KEY (`id`),
   KEY `idx_scheme_imported` (`scheme`, `imported_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 DEFAULT COLLATE=utf8mb4_unicode_ci;
+
+-- A boat's choice of IRC certificate for one race. A boat is on its primary
+-- certificate unless it has a row here. boat_key is the boat's sail number and
+-- name reduced to capitals and digits ("GBR4822R|MOJITO"), as entries are matched.
+CREATE TABLE IF NOT EXISTS `#__isorairc_cert_choices` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `race_id` int unsigned NOT NULL,
+  `boat_key` varchar(190) NOT NULL,
+  `certificate` varchar(10) NOT NULL DEFAULT 'secondary',
+  `set_at` datetime NOT NULL,
+  `set_by` varchar(100) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_race_boat` (`race_id`, `boat_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 DEFAULT COLLATE=utf8mb4_unicode_ci;

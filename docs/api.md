@@ -1,6 +1,6 @@
 # ISORA Race Office: API
 
-A read-only feed of ISORA's races and the boats entered for each one, for another system such as Crewmanager. Answers are JSON.
+A feed of ISORA's races and the boats entered for each one, for another system such as Crewmanager. Answers are JSON. Everything is read-only except one call: choosing which IRC certificate a boat uses for a race.
 
 ## Key
 
@@ -24,8 +24,9 @@ Replace `https://www.isora.org` with the site's address if it differs.
 | The races | `https://www.isora.org/index.php?option=com_isorairc&task=api.races&format=json` |
 | The races, each with its boats | `https://www.isora.org/index.php?option=com_isorairc&task=api.races&entries=1&format=json` |
 | One race and its boats | `https://www.isora.org/index.php?option=com_isorairc&task=api.entries&race=7&format=json` (`7` is the race's `id`) |
+| Choose a boat's certificate (POST) | `https://www.isora.org/index.php?option=com_isorairc&task=api.certificate&format=json` |
 
-Use GET. Example:
+Use GET for the first three. Example:
 
 ```
 curl -H "X-Api-Key: YOUR-KEY" "https://www.isora.org/index.php?option=com_isorairc&task=api.races&format=json"
@@ -70,6 +71,8 @@ Races are in date order. Only races that ISORA have linked to the entry form are
       "rating_system": "IRC",
       "rating": 1.045,
       "rating_confirmed": true,
+      "certificate": "primary",
+      "secondary_available": false,
       "person_in_charge": {
         "name": "Pat Skipper",
         "email": "pat.skipper@example.invalid",
@@ -87,12 +90,49 @@ Races are in date order. Only races that ISORA have linked to the entry form are
 | `rating_system` | `IRC` or `YTC`, from the class the boat entered in. |
 | `rating` | The boat's rating as a number (an IRC TCC such as `1.045`, or a YTC number), or `null` if the boat is not on the rating list. Before the race's rating deadline this is the current rating; afterwards it is the rating frozen at the deadline. |
 | `rating_confirmed` | `true` when the rating list has a boat with this name and this sail number. `false` when only one of the two matched, or there is no rating. |
+| `certificate` | `primary` or `secondary`: the IRC certificate the rating is taken from. `null` for a boat that is not on the IRC list (YTC boats included). |
+| `secondary_available` | `true` when the IRC list has a secondary certificate for this boat, so it can be chosen. |
 | `person_in_charge` | The name, e-mail address and mobile number given on the entry form. |
 | `entered_at` | When the boat's latest entry form was sent, in UTC. |
 
 Boats are in name order. A boat appears once per race, taken from the latest entry form it sent. There is no boat number: match boats on sail number and name, or on the person in charge's e-mail address.
 
 Entries change until the race: boats can enter or withdraw by sending the form again, and ratings change until the rating deadline. Fetch again rather than keeping an old copy; once an hour is plenty.
+
+## Choosing a boat's certificate
+
+Some IRC boats have two certificates. A boat is rated on its primary certificate unless its secondary one is chosen for a race. The choice is made per race and can be changed as often as wanted until that race's `rating_deadline`. After the deadline only ISORA's race management can change it.
+
+Send a POST with the key in a header, and these four values either as form fields or as a JSON body:
+
+| Value | Meaning |
+|---|---|
+| `race` | The race's `id`. |
+| `boat` | The boat's name, as in the `boat` field of the entries. |
+| `sail_number` | The boat's sail number, as in the `sail_number` field. |
+| `certificate` | `primary` or `secondary`. |
+
+Capitals, spaces and punctuation in the boat's name and sail number do not matter.
+
+```
+curl -X POST -H "X-Api-Key: YOUR-KEY" -H "Content-Type: application/json" -d '{"race": 7, "boat": "Sea Breeze", "sail_number": "IRL 1234", "certificate": "secondary"}' "https://www.isora.org/index.php?option=com_isorairc&task=api.certificate&format=json"
+```
+
+The answer is the race and the boat's entry as it now stands, laid out as above, so `rating` is already the chosen certificate's rating:
+
+```json
+{
+  "race": { "id": 7, "name": "07O2- Offshore Race 2", "date": "2027-05-29", "rating_deadline": "2027-05-22T22:59:00Z" },
+  "entry": { "boat": "Sea Breeze", "sail_number": "IRL 1234", "rating": 1.021, "certificate": "secondary", "secondary_available": true }
+}
+```
+
+(The entry has all its fields; only some are shown here.)
+
+- Only offer the choice for a boat whose `secondary_available` is `true`. Asking for `secondary` otherwise is refused.
+- Choosing `primary` for a boat that is already on it is accepted and changes nothing.
+- A choice applies to one race. To use the secondary certificate for several races, send one request per race.
+- Race management can also change the choice on the ISORA site, so read `certificate` from the entries; do not rely on what you last sent.
 
 ## When something is wrong
 
@@ -101,3 +141,14 @@ Entries change until the race: boats can enter or withdraw by sending the form a
 | 401 | `{"error": "A valid API key is required."}` | The key is missing or wrong. |
 | 404 | `{"error": "Race not found."}` | No race with that `id` is linked to the entry form. |
 | 404 | `{"error": "The API is switched off."}` | ISORA have not set a key. |
+
+When choosing a certificate, also:
+
+| Status | Answer | Meaning |
+|---|---|---|
+| 400 | `{"error": "certificate must be \"primary\" or \"secondary\"."}` | `certificate` is missing or something else. |
+| 400 | `{"error": "Give the boat and its sail_number."}` | Both are missing. |
+| 404 | `{"error": "Boat not entered for this race."}` | No boat with that name and sail number is entered for the race. |
+| 405 | `{"error": "Use POST to choose a certificate."}` | The request was a GET. |
+| 409 | `{"error": "The rating deadline for this race has passed."}` | Too late: ask ISORA's race management. |
+| 409 | `{"error": "This boat has no secondary certificate on the IRC list."}` | `secondary` was asked for a boat with one certificate. |

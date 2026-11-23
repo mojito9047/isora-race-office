@@ -2,6 +2,7 @@
 
 namespace IsoraTests\Cases;
 
+use Isora\Component\Isorairc\Administrator\Helper\EntriesHelper;
 use IsoraTests\Browser;
 use IsoraTests\Env;
 use IsoraTests\Response;
@@ -156,6 +157,165 @@ class EntriesPageTest extends SiteTest
             $this->assertNotContains('0412345', $page->body, 'Page for ' . ($who ?: 'the public'));
             $this->assertNotContains('Own tracker', $page->body);
         }
+    }
+
+    // ------------------------------------------------------------ primary and secondary certificates
+
+    private function twoCertificates(): void
+    {
+        Env::addRating('irc', 'MOJITO', 'GBR4822R', 1.084, null, ['cert_no' => '100', 'crew' => 10]);
+        Env::addRating('irc', 'MOJITO - SEC', 'GBR4822R', 1.052, null, ['cert_no' => '200', 'crew' => 4, 'secondary' => 'SEC']);
+        Env::addRating('irc', 'SEA BREEZE', 'IRL1234', 1.045);
+        Env::submit(Env::boat(['Boat_Name' => 'Mojito', 'Sail_Number' => 'GBR 4822R']));
+        Env::submit(Env::boat(['Boat_Name' => 'Sea Breeze', 'Sail_Number' => 'IRL 1234']));
+    }
+
+    /** Press the "Use ... certificate" button of a boat, as race management would. */
+    private function swap(Browser $browser, Response $page, string $boat, string $sail, string $certificate, ?int $race = null): Response
+    {
+        return $browser->post(self::PAGE, [
+            'option' => 'com_isorairc', 'task' => 'entries.certificate', 'race' => $race ?? $this->race,
+            'boat' => $boat, 'sail' => $sail, 'certificate' => $certificate, $browser->token($page->body) => 1,
+        ]);
+    }
+
+    public function testRaceManagementCanSwapABoatToItsSecondaryCertificateAndBack(): void
+    {
+        $this->twoCertificates();
+        $office = $this->browser('office');
+        $page   = $this->page($office);
+
+        $this->assertSame(1, substr_count($page->body, '<form class="isorairc-cert"'), 'Only the boat with two certificates gets the button');
+        $this->assertContains('<input type="hidden" name="boat" value="Mojito">', $page->body);
+        $this->assertContains('<button type="submit">Use secondary certificate</button>', $page->body);
+        $this->assertContains('Mojito GBR 4822R J/109 IRC Test Yacht Club 1.084', $page->text());
+
+        $after = $this->swap($office, $page, 'Mojito', 'GBR 4822R', 'secondary');
+        $this->assertSame(200, $after->status);
+        $this->assertNoPhpErrors($after);
+        $this->assertContains('Mojito is now on its secondary certificate for Race 1.', $after->body);
+        $this->assertContains('race=' . $this->race, $after->url, 'Back on the same race');
+
+        $page = $this->page($office);
+        $this->assertContains('Mojito GBR 4822R J/109 IRC Test Yacht Club 1.052 Secondary certificate', $page->text());
+        $this->assertMatches('/Secondary chosen \d\d \w{3} \d{4} \d\d:\d\d by /', $page->text());
+        $this->assertContains('<button type="submit">Use primary certificate</button>', $page->body);
+        $this->assertContains('name="pdf_search" value="200"', $page->body, 'Boat data is searched for the secondary certificate');
+
+        $this->swap($office, $page, 'Mojito', 'GBR 4822R', 'primary');
+        $page = $this->page($office);
+        $this->assertContains('Mojito GBR 4822R J/109 IRC Test Yacht Club 1.084', $page->text());
+        $this->assertNotContains('Secondary certificate', $page->text());
+    }
+
+    public function testEveryoneSeesThatABoatIsOnItsSecondaryCertificateButOnlyRaceManagementCanSwap(): void
+    {
+        $this->twoCertificates();
+        EntriesHelper::setCertificate($this->race, 'Mojito', 'GBR 4822R', 'secondary', 'Pat Office');
+
+        foreach (['', 'registered'] as $who) {
+            $page = $this->page($this->browser($who));
+            $what = 'Page for ' . ($who ?: 'the public');
+
+            $this->assertContains('Mojito GBR 4822R J/109 IRC Test Yacht Club 1.052 Secondary certificate', $page->text(), $what);
+            $this->assertContains('Crew 4', $page->text(), $what . ': the pop-up has the secondary certificate\'s details');
+            $this->assertNotContains('isorairc-cert"', $page->body, $what);
+            $this->assertNotContains('Use primary certificate', $page->body, $what);
+            $this->assertNotContains('Pat Office', $page->body, $what);
+            $this->assertNotContains('Secondary chosen', $page->body, $what);
+        }
+    }
+
+    public function testRaceManagementCanSwapAfterTheRatingDeadline(): void
+    {
+        $this->twoCertificates();
+        $past = Env::addRace('Sailed', Env::localDate(Env::utc('-3 days')), Env::utc('-10 days'), 'Race_1');
+        Env::addRating('irc', 'MOJITO', 'GBR4822R', 1.084, null, [], $past);
+        Env::addRating('irc', 'MOJITO - SEC', 'GBR4822R', 1.052, null, ['secondary' => 'SEC'], $past);
+        Env::freeze($past, 'irc');
+        $office = $this->browser('office');
+        $page   = $this->page($office, $past);
+
+        $this->assertContains('Use secondary certificate', $page->body);
+        $after = $this->swap($office, $page, 'Mojito', 'GBR 4822R', 'secondary', $past);
+        $this->assertContains('Mojito is now on its secondary certificate for Sailed.', $after->body);
+        $this->assertContains('IRC Test Yacht Club 1.052 Secondary certificate', $this->page($office, $past)->text());
+    }
+
+    public function testSwapIsRefusedForEveryoneButRaceManagement(): void
+    {
+        $this->twoCertificates();
+        $fields = ['option' => 'com_isorairc', 'task' => 'entries.certificate', 'race' => $this->race, 'boat' => 'Mojito', 'sail' => 'GBR 4822R', 'certificate' => 'secondary'];
+
+        // The public, with a token of their own.
+        $guest = $this->browser();
+        $token = $guest->token($guest->get('/index.php?option=com_users&view=login')->body);
+        $this->assertSame(403, $guest->post(self::PAGE, $fields + [$token => 1])->status, 'The public');
+
+        // An ordinary member.
+        $member = $this->browser('registered');
+        $token  = $member->token($member->get('/index.php?option=com_users&view=profile&layout=edit')->body);
+        $this->assertSame(403, $member->post(self::PAGE, $fields + [$token => 1])->status, 'A member');
+
+        // Race management without the token from the page (a forged request).
+        $office = $this->browser('office');
+        $this->page($office);
+        $office->post(self::PAGE, $fields);
+
+        // And not by following a link.
+        $page = $this->page($office);
+        $office->get(self::PAGE . '?' . http_build_query($fields + [$office->token($page->body) => 1]));
+
+        $this->assertCount(0, Env::rows('#__isorairc_cert_choices'), 'Nothing was changed');
+    }
+
+    public function testSwapOfABoatThatIsNotEnteredOrHasNoSecondaryChangesNothing(): void
+    {
+        $this->twoCertificates();
+        $office = $this->browser('office');
+        $page   = $this->page($office);
+
+        $this->assertSame(404, $this->swap($office, $page, 'Nobody', 'XXX 1', 'secondary')->status);
+        $this->assertSame(404, $this->swap($office, $page, 'Mojito', 'GBR 4822R', 'tertiary')->status);
+
+        $none = $this->swap($office, $page, 'Sea Breeze', 'IRL 1234', 'secondary');
+        $this->assertContains('Sea Breeze has no secondary certificate on the IRC list.', $none->body);
+
+        $this->assertCount(0, Env::rows('#__isorairc_cert_choices'));
+    }
+
+    public function testCsvSaysWhichCertificateEachBoatIsOn(): void
+    {
+        $this->twoCertificates();
+        Env::addRating('ytc', 'Slow Coach', 'GBR55', 845);
+        Env::submit(Env::boat(['Boat_Name' => 'Slow Coach', 'Sail_Number' => 'GBR 55', 'Class_Racing' => 'YTC']));
+        EntriesHelper::setCertificate($this->race, 'Mojito', 'GBR 4822R', 'secondary', 'Pat Office');
+        $browser = $this->browser('office');
+        $rows    = $this->csv($browser->get($this->link($this->page($browser), 'Download CSV'))->body);
+        $column  = array_search('IRC certificate', $rows[0], true);
+
+        $this->assertSame(14, $column, 'After the IRC details');
+        $this->assertSame(['Mojito' => 'Secondary', 'Sea Breeze' => 'Primary', 'Slow Coach' => ''], array_column(\array_slice($rows, 1), $column, 0));
+        $this->assertSame('1.052', $rows[1][5]);
+    }
+
+    public function testFleetsheetUsesTheSecondaryCertificatesRating(): void
+    {
+        $this->twoCertificates();
+        EntriesHelper::setCertificate($this->race, 'Mojito', 'GBR 4822R', 'secondary', 'Pat Office');
+        $browser  = $this->browser('office');
+        $download = $browser->get($this->link($this->page($browser), 'Download YB fleetsheet'));
+
+        $file = tempnam(sys_get_temp_dir(), 'fleet');
+        file_put_contents($file, $download->body);
+        $zip = new \ZipArchive();
+        $this->assertTrue($zip->open($file) === true);
+        $sheet = (string) $zip->getFromName('xl/worksheets/sheet1.xml');
+        $zip->close();
+        unlink($file);
+
+        $this->assertContains('<v>1.052</v>', $sheet);
+        $this->assertNotContains('<v>1.084</v>', $sheet);
     }
 
     // ------------------------------------------------------------ IRC data pop-up
@@ -382,13 +542,13 @@ class EntriesPageTest extends SiteTest
         $this->assertSame(
             [
                 'Boat', 'Sail No', 'Type', 'Class', 'Club', 'Rating', 'Rating note', 'Declared rating',
-                'IRC issue date', 'IRC crew', 'IRC headsails', 'IRC flying headsails', 'IRC spinnakers', 'IRC SSS base value',
+                'IRC issue date', 'IRC crew', 'IRC headsails', 'IRC flying headsails', 'IRC spinnakers', 'IRC SSS base value', 'IRC certificate',
                 'Person in charge', 'Mobile', 'E-mail', 'Entry type', 'Own tracker serial', 'Form sent (UTC)',
             ],
             $rows[0]
         );
         $this->assertSame(
-            ['Sea Breeze', 'IRL 1234', 'J/109', 'IRC', 'Test Yacht Club', '1.045', '', '1.039', '', '', '', '', '', '', 'Pat Skipper', "'+353 85 555 0100", 'pat.skipper@example.invalid', 'Season entry (all races)', '', '2026-10-01 10:00:00'],
+            ['Sea Breeze', 'IRL 1234', 'J/109', 'IRC', 'Test Yacht Club', '1.045', '', '1.039', '', '', '', '', '', '', 'Primary', 'Pat Skipper', "'+353 85 555 0100", 'pat.skipper@example.invalid', 'Season entry (all races)', '', '2026-10-01 10:00:00'],
             $rows[1]
         );
         $this->assertSame('Not found in the YTC list', $rows[2][6]);
@@ -428,7 +588,7 @@ class EntriesPageTest extends SiteTest
         $this->assertSame('\'=HYPERLINK("http://bad.invalid","Click")', $row[0]);
         $this->assertSame("'@SUM(A1)", $row[4]);
         $this->assertSame('-1.5', $row[7], 'A plain negative number is left alone');
-        $this->assertSame("'-cmd", $row[14]);
+        $this->assertSame("'-cmd", $row[15]);
     }
 
     public function testCsvIsRefusedWithoutSigningIn(): void

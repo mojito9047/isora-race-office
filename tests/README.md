@@ -6,17 +6,17 @@ Automated tests for ISORA Race Office. They check the extension the way it is re
 
 | Area | Test file | Examples of what is checked |
 |---|---|---|
-| Project files | `static.php` | No syntax errors; the three version numbers agree; the changelog and admin guide are up to date; every file is in the package. |
+| Project files | `static.php` | No syntax errors; the three version numbers agree; the changelog, admin guide, guide for race organisers and data description are marked for this version; every file is in the package. |
 | Install, update, uninstall | `cases/InstallTest.php`, `removed/RemovedTest.php` | Fresh install; update over an existing install; Joomla's database check is clean; uninstall leaves nothing behind and does not touch the entry form's tables. |
 | Reading a rating list | `cases/RatingsParseTest.php` | Columns in any order; both date formats; accented names; rows without a rating skipped; a changed layout is reported by name. |
 | Importing | `cases/ImportTest.php` | Both lists import; a short list, a server error or a changed layout is refused and the old ratings are kept; every download is archived. |
 | Rating deadline | `cases/SnapshotTest.php` | Nothing is frozen before the deadline; a certificate reissued after the deadline keeps its old rating; a boat first rated after it is left out; summer time; rebuild from the archive. |
-| Entry form | `cases/EntriesTest.php` | Only boats that answered yes; a boat's latest form wins; later forms can add or withdraw a boat; only race questions are offered; a boat's own tracker serial is read only when it answered yes. |
+| Entry form | `cases/EntriesTest.php` | Only boats that answered yes; a boat's latest form wins; later forms can add or withdraw a boat; only race questions are offered; a boat's own tracker serial is read only when it answered yes; IRC certificate details; the primary or secondary certificate chosen per race. |
 | Matching ratings to entries | `cases/RatingMatchTest.php` | Name and sail number; sail number typed without its letters; doubtful matches flagged; non-spinnaker and YTC classes; frozen ratings used once frozen. |
 | YB fleetsheet | `cases/FleetsheetTest.php` | Class band limits; flag codes; two-handed group; YTC boats; the workbook itself, cell by cell; a boat's own tracker number in the Tracker ID column, otherwise Serial and Tracker ID empty. |
 | Rating lookup page | `cases/LookupPageTest.php` | Search by name and sail number; frozen ratings of a race; odd characters shown safely. |
-| Race entries page | `cases/EntriesPageTest.php` | The public and ordinary members never see contact details; race management does; the IRC data pop-up; the Boat data button; CSV and fleetsheet downloads, and that nobody else can get them. |
-| API | `cases/ApiTest.php` | Races and boats as JSON; nothing without the right key; the key is not accepted in the address; off until a key is set. |
+| Race entries page | `cases/EntriesPageTest.php` | The public and ordinary members never see contact details; race management does; swapping a boat between its primary and secondary certificate; the IRC data pop-up; the Boat data button; CSV and fleetsheet downloads, and that nobody else can get them. |
+| API | `cases/ApiTest.php` | Races and boats as JSON; nothing without the right key; the key is not accepted in the address; off until a key is set; choosing a boat's certificate, refused after the rating deadline. |
 | Admin screens | `cases/AdminTest.php` | Adding and editing races; the deadline worked out in Irish time, summer and winter; Import, Rebuild and Delete buttons; the options screen. |
 | Scheduled task | `cases/ScheduledTaskTest.php` | The daily import run through Joomla's scheduler, including a failed download. |
 

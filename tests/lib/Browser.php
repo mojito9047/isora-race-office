@@ -69,9 +69,13 @@ class Browser
         return $this->request($path, null, $follow, $headers);
     }
 
-    public function post(string $path, array $fields, bool $follow = true): Response
+    /**
+     * @param array|string $fields  Form fields, or a ready-made request body (JSON for instance)
+     * @param string[]     $headers Extra request headers, each as "Name: value"
+     */
+    public function post(string $path, $fields, bool $follow = true, array $headers = []): Response
     {
-        return $this->request($path, $fields, $follow);
+        return $this->request($path, $fields, $follow, $headers);
     }
 
     /** The anti-forgery token Joomla puts in every form on a page. */
@@ -113,7 +117,7 @@ class Browser
         }
     }
 
-    private function request(string $path, ?array $fields, bool $follow, array $headers = []): Response
+    private function request(string $path, $fields, bool $follow, array $headers = []): Response
     {
         $response = new Response();
         $curl     = curl_init(preg_match('#^https?://#', $path) ? $path : Env::$siteUrl . $path);
@@ -143,7 +147,7 @@ class Browser
 
         if ($fields !== null) {
             curl_setopt($curl, CURLOPT_POST, true);
-            curl_setopt($curl, CURLOPT_POSTFIELDS, http_build_query($fields));
+            curl_setopt($curl, CURLOPT_POSTFIELDS, \is_array($fields) ? http_build_query($fields) : $fields);
         }
 
         $body = curl_exec($curl);

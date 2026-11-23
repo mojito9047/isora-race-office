@@ -6,8 +6,8 @@ A Joomla extension for the Irish Sea Offshore Racing Association (ISORA) website
 
 - **Rating lookup.** Imports the published IRC and YTC rating lists every day and gives the site a page where anyone can look up a boat by name or sail number.
 - **Ratings frozen at the rating deadline.** For each race it keeps every boat's rating as it stood at that race's rating deadline (normally 7 days before the race, at 23:59). A certificate reissued after the deadline does not change the frozen rating.
-- **Race entries.** Reads the RSForm! Pro entry form and lists the boats entered for each race, with each boat's rating filled in and mismatches flagged.
-- **API.** A key-protected, read-only JSON feed of the races and the boats entered, for Crewmanager (`docs/api.md`).
+- **Race entries.** Reads the RSForm! Pro entry form and lists the boats entered for each race, with each boat's rating filled in and mismatches flagged. A pop-up shows details from each IRC boat's certificate. Race management see contact details, can download the list as CSV, and can put a boat on its secondary IRC certificate for a race.
+- **API.** A key-protected JSON feed of the races and the boats entered, for Crewmanager, which can also choose a boat's primary or secondary IRC certificate for a race until its rating deadline (`docs/api.md`).
 - **YB Tracking fleetsheet.** Produces YB's fleet information sheet for a race, filled in, including the serial number of a boat's own tracker when it gave one on the entry form.
 
 ## Install
@@ -28,7 +28,8 @@ Uploading a newer package updates an existing install in place; races, snapshots
 ## Documentation
 
 - [Admin guide](docs/admin-guide.md): installing, setting up, and what to do when something goes wrong.
-- [API](docs/api.md): the addresses and answers of the feed for Crewmanager.
+- [Guide for race organisers](docs/race-office-guide.md): using the Race entries page before a race: checking ratings, changing a boat's certificate, the CSV and the YB fleetsheet.
+- [API](docs/api.md): the addresses and answers of the feed for Crewmanager, and how it chooses a boat's certificate.
 - [Stored data](docs/data.md): the rating tables, what each value means, and how other parts of the Joomla site can read them.
 - [Changelog](CHANGELOG.md): what changed in each version.
 - [Tests](tests/README.md): what the automated tests cover and how to run them.
@@ -40,7 +41,7 @@ Uploading a newer package updates an existing install in place; races, snapshots
 | `src/com_isorairc` | The component: admin screens, public pages, import and snapshot logic, fleetsheet template. |
 | `src/plg_task_isorairc` | The scheduled-task plugin that runs the daily import. |
 | `src/pkg_isorairc` | The package that installs both together. |
-| `docs` | The admin guide. |
+| `docs` | The admin guide, the guide for race organisers, the API description and the description of the stored data. |
 | `tests` | The automated tests. |
 | `build.py` | Builds the installable package. |
 
@@ -69,7 +70,7 @@ The first is a quick check of the project's files and runs anywhere. The second 
 
 1. Set the new version number in the three manifests: `src/com_isorairc/isorairc.xml`, `src/plg_task_isorairc/isorairc.xml` and `src/pkg_isorairc/pkg_isorairc.xml`.
 2. If the database changes, add `src/com_isorairc/admin/sql/updates/mysql/<version>.sql` with one change per statement, and make the same change in `install.mysql.utf8.sql`.
-3. Add an entry to `CHANGELOG.md` and update the version line in the admin guide.
+3. Add an entry to `CHANGELOG.md` and update the "Written for version" line in `docs/admin-guide.md`, `docs/race-office-guide.md` and `docs/data.md`. If the Race entries page changed, update the guide for race organisers. If the API changed, update `docs/api.md`; if a table changed, `docs/data.md`.
 4. Run the tests (see above) and check they all pass.
 5. Commit, tag the commit `v<version>`, and create a GitHub release with the package built from that commit attached as `pkg_isorairc-<version>.zip`.
 

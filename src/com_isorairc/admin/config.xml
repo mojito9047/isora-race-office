@@ -213,7 +213,7 @@
 			default="TrackerSerialNumber"
 		/>
 	</fieldset>
-	<fieldset name="api" label="API" description="A read-only feed of the races and the boats entered for them, for another system such as Crewmanager. It includes each boat's person in charge with their e-mail and mobile number, so give the key only to systems that are allowed to hold those details. The addresses are in the admin guide.">
+	<fieldset name="api" label="API" description="A feed of the races and the boats entered for them, for another system such as Crewmanager. With the key that system can also choose a boat's secondary IRC certificate for a race, until the race's rating deadline. It includes each boat's person in charge with their e-mail and mobile number, so give the key only to systems that are allowed to hold those details. The addresses are in the admin guide.">
 		<field
 			name="api_key"
 			type="text"

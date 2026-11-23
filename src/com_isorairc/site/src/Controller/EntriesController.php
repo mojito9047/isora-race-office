@@ -7,6 +7,7 @@ namespace Isora\Component\Isorairc\Site\Controller;
 use Isora\Component\Isorairc\Administrator\Helper\EntriesHelper;
 use Isora\Component\Isorairc\Administrator\Helper\FleetsheetHelper;
 use Joomla\CMS\MVC\Controller\BaseController;
+use Joomla\CMS\Router\Route;
 
 class EntriesController extends BaseController
 {
@@ -33,6 +34,7 @@ class EntriesController extends BaseController
             'flying_headsails' => 'IRC flying headsails',
             'spinnakers'       => 'IRC spinnakers',
             'sss_base'         => 'IRC SSS base value',
+            'certificate'      => 'IRC certificate',
             'contact'     => 'Person in charge',
             'phone'       => 'Mobile',
             'email'       => 'E-mail',
@@ -51,7 +53,7 @@ class EntriesController extends BaseController
             $row = [];
 
             foreach (array_keys($columns) as $key) {
-                $value = (string) $entry->$key;
+                $value = $key === 'certificate' ? ucfirst((string) $entry->$key) : (string) $entry->$key;
                 // Stop spreadsheet programs treating typed-in text as a formula.
                 $row[] = preg_match('/^[=+\-@]/', $value) && !is_numeric($value) ? "'" . $value : $value;
             }
@@ -83,14 +85,50 @@ class EntriesController extends BaseController
     }
 
     /**
-     * The race asked for, after checking the link is genuine and the user is race management.
+     * Race management only: put a boat on its secondary IRC certificate for one
+     * race, or back on its primary one. Allowed at any time, also after the
+     * rating deadline.
      */
-    private function race(): object
+    public function certificate()
     {
-        $this->checkToken('get');
+        $race        = $this->race('post');
+        $boat        = trim($this->input->post->getString('boat', ''));
+        $sail        = trim($this->input->post->getString('sail', ''));
+        $certificate = $this->input->post->getCmd('certificate', '');
+        $key         = EntriesHelper::boatKey($boat, $sail);
+        $found       = null;
+
+        foreach (EntriesHelper::entries($race) as $entry) {
+            if (EntriesHelper::boatKey($entry->boat, $entry->sail) === $key) {
+                $found = $entry;
+            }
+        }
+
+        if (!$found || !\in_array($certificate, ['primary', 'secondary'], true)) {
+            throw new \RuntimeException('Boat not found among the entries for this race.', 404);
+        }
+
+        $back = Route::_('index.php?option=com_isorairc&view=entries&race=' . (int) $race->id, false);
+
+        if ($certificate === 'secondary' && !$found->has_secondary) {
+            $this->setRedirect($back, $found->boat . ' has no secondary certificate on the IRC list.', 'warning');
+
+            return;
+        }
+
+        EntriesHelper::setCertificate((int) $race->id, $found->boat, $found->sail, $certificate, (string) $this->app->getIdentity()->name);
+        $this->setRedirect($back, $found->boat . ' is now on its ' . $certificate . ' certificate for ' . $race->name . '.');
+    }
+
+    /**
+     * The race asked for, after checking the request is genuine and the user is race management.
+     */
+    private function race(string $method = 'get'): object
+    {
+        $this->checkToken($method);
 
         if (!$this->app->getIdentity()->authorise('core.manage', 'com_isorairc')) {
-            throw new \RuntimeException('You are not allowed to download entries.', 403);
+            throw new \RuntimeException('You are not allowed to do that.', 403);
         }
 
         $races  = EntriesHelper::races();

@@ -243,11 +243,14 @@ class AdminTest extends SiteTest
         Env::import('irc', Env::ircCsv(), '2026-05-17 06:00:00');
         $this->press('races.rebuild', [$doomed, $kept]);
         $this->assertCount(240, Env::rows('#__isorairc_snapshot_ratings'), 'Both races frozen first');
+        \Isora\Component\Isorairc\Administrator\Helper\EntriesHelper::setCertificate($doomed, 'Mojito', 'GBR 4822R', 'secondary', 'test');
+        \Isora\Component\Isorairc\Administrator\Helper\EntriesHelper::setCertificate($kept, 'Mojito', 'GBR 4822R', 'secondary', 'test');
 
         $page = $this->press('races.delete', [$doomed]);
 
         $this->assertContains('Race deleted.', $page->body);
         $this->assertSame(['Kept'], array_column(Env::rows('#__isorairc_races'), 'name'));
+        $this->assertSame([$kept], array_map('intval', array_column(Env::rows('#__isorairc_cert_choices'), 'race_id')), 'Certificate choices of the deleted race are gone');
         $this->assertCount(0, Env::rows('#__isorairc_snapshot_ratings', 'race_id = ' . $doomed), 'Frozen ratings of the deleted race');
         $this->assertCount(0, Env::rows('#__isorairc_race_snapshots', 'race_id = ' . $doomed, 'race_id'));
         $this->assertCount(120, Env::rows('#__isorairc_snapshot_ratings', 'race_id = ' . $kept), 'Frozen ratings of the other race');

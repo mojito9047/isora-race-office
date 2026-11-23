@@ -300,6 +300,204 @@ class EntriesTest extends SiteTest
         $this->assertSame(['2026-03-15', '9', '4'], [$frozen->issue_date, $frozen->crew, $frozen->spinnakers]);
     }
 
+    // ------------------------------------------------------------ primary and secondary certificates
+
+    /** Mojito with a primary and a secondary certificate, as the IRC list writes them, entered for the race. */
+    private function boatWithTwoCertificates(int $raceId = 0): void
+    {
+        Env::addRating('irc', 'MOJITO', 'GBR4822R', 1.084, 1.060, ['cert_no' => '100', 'crew' => 10, 'spinnakers' => 4], $raceId);
+        Env::addRating('irc', 'MOJITO - SEC', 'GBR4822R', 1.052, 1.040, ['cert_no' => '200', 'crew' => 4, 'spinnakers' => 2, 'secondary' => 'SEC'], $raceId);
+
+        if (!$raceId) {
+            Env::submit(Env::boat(['Boat_Name' => 'Mojito', 'Sail_Number' => 'GBR 4822R']));
+        }
+    }
+
+    public function testBoatIsOnItsPrimaryCertificateUnlessItChoosesOtherwise(): void
+    {
+        $this->boatWithTwoCertificates();
+        $entry = $this->entries()[0];
+
+        $this->assertSame('1.084', $entry->rating_text);
+        $this->assertSame('primary', $entry->certificate);
+        $this->assertSame('primary', $entry->certificate_wanted);
+        $this->assertTrue($entry->has_secondary, 'The list has a secondary certificate for it');
+        $this->assertSame('ok', $entry->rating_status);
+        $this->assertSame('100', $entry->cert_no);
+    }
+
+    public function testChoosingTheSecondaryCertificateUsesItsRatingAndDetails(): void
+    {
+        $this->boatWithTwoCertificates();
+        EntriesHelper::setCertificate($this->race, 'Mojito', 'GBR 4822R', 'secondary', 'Pat Office');
+        $entry = $this->entries()[0];
+
+        $this->assertSame('1.052', $entry->rating_text);
+        $this->assertNumber(1.052, $entry->rating);
+        $this->assertSame('secondary', $entry->certificate);
+        $this->assertSame('secondary', $entry->certificate_wanted);
+        $this->assertSame('200', $entry->cert_no, 'Boat data is looked up by the secondary certificate number');
+        $this->assertSame(['4', '2'], [$entry->crew, $entry->spinnakers], 'Details come from the secondary certificate');
+        $this->assertSame('ok', $entry->rating_status, 'The boat is still firmly identified');
+        $this->assertSame('', $entry->rating_note);
+        $this->assertSame('Pat Office', $entry->certificate_set_by);
+        $this->assertTrue($entry->certificate_set_at !== '');
+    }
+
+    public function testChoosingPrimaryAgainGoesBack(): void
+    {
+        $this->boatWithTwoCertificates();
+        EntriesHelper::setCertificate($this->race, 'Mojito', 'GBR 4822R', 'secondary', 'Pat Office');
+        EntriesHelper::setCertificate($this->race, 'Mojito', 'GBR 4822R', 'primary', 'Pat Office');
+        $entry = $this->entries()[0];
+
+        $this->assertSame('1.084', $entry->rating_text);
+        $this->assertSame('primary', $entry->certificate);
+        $this->assertSame('', $entry->certificate_set_at);
+        $this->assertCount(0, Env::rows('#__isorairc_cert_choices'), 'Nothing is kept for a boat on its primary certificate');
+    }
+
+    public function testChoosingTwiceKeepsOneRecord(): void
+    {
+        $this->boatWithTwoCertificates();
+        EntriesHelper::setCertificate($this->race, 'Mojito', 'GBR 4822R', 'secondary', 'First');
+        EntriesHelper::setCertificate($this->race, 'MOJITO', 'gbr4822r', 'secondary', 'Second');
+
+        $this->assertCount(1, Env::rows('#__isorairc_cert_choices'));
+        $this->assertSame('Second', $this->entries()[0]->certificate_set_by);
+    }
+
+    public function testTheChoiceIsForOneRaceOnly(): void
+    {
+        $second = Env::addRace('Race 2', '2027-06-12', '2027-06-05 22:59:00', 'Race_2');
+        Env::addRating('irc', 'MOJITO', 'GBR4822R', 1.084);
+        Env::addRating('irc', 'MOJITO - SEC', 'GBR4822R', 1.052, null, ['secondary' => 'SEC']);
+        Env::submit(Env::boat(['Boat_Name' => 'Mojito', 'Sail_Number' => 'GBR 4822R', 'Race_2' => 'Yes']));
+        EntriesHelper::setCertificate($this->race, 'Mojito', 'GBR 4822R', 'secondary', 'Pat Office');
+
+        $this->assertSame('1.052', $this->entries()[0]->rating_text, 'Race 1');
+        $this->assertSame('1.084', $this->entries($second)[0]->rating_text, 'Race 2 is untouched');
+    }
+
+    public function testTheChoiceIsForOneBoatOnly(): void
+    {
+        $this->boatWithTwoCertificates();
+        Env::addRating('irc', 'OTHER', 'IRL1', 1.000);
+        Env::addRating('irc', 'OTHER - SEC', 'IRL1', 0.950, null, ['secondary' => 'SEC']);
+        Env::submit(Env::boat(['Boat_Name' => 'Other', 'Sail_Number' => 'IRL 1']));
+        EntriesHelper::setCertificate($this->race, 'Mojito', 'GBR 4822R', 'secondary', 'Pat Office');
+        $entries = $this->entries();
+
+        $this->assertSame(['Mojito' => '1.052', 'Other' => '1.000'], array_column($entries, 'rating_text', 'boat'));
+    }
+
+    public function testTheChoiceSurvivesTheBoatSendingItsFormAgain(): void
+    {
+        $this->boatWithTwoCertificates();
+        EntriesHelper::setCertificate($this->race, 'Mojito', 'GBR 4822R', 'secondary', 'Pat Office');
+        Env::submit(Env::boat(['Boat_Name' => 'MOJITO', 'Sail_Number' => 'GBR4822R']), '2026-11-01 09:00:00');
+
+        $this->assertSame('1.052', $this->entries()[0]->rating_text);
+    }
+
+    public function testSecondaryCertificateIsUsedFromTheFrozenListAfterTheDeadline(): void
+    {
+        $this->boatWithTwoCertificates();
+        $this->boatWithTwoCertificates($this->race);
+        $db = Env::db();
+        $db->setQuery('UPDATE ' . $db->quoteName('#__isorairc_ratings') . ' SET ' . $db->quoteName('tcc') . ' = ' . $db->quoteName('tcc') . ' + 0.1')->execute();
+        Env::freeze($this->race, 'irc');
+
+        $this->assertSame('1.084', $this->entries()[0]->rating_text, 'Frozen primary');
+
+        // Race management can still swap after the deadline; the frozen secondary rating is used.
+        EntriesHelper::setCertificate($this->race, 'Mojito', 'GBR 4822R', 'secondary', 'Pat Office');
+        $this->assertSame('1.052', $this->entries()[0]->rating_text, 'Frozen secondary');
+    }
+
+    public function testNonSpinnakerClassUsesTheSecondaryCertificatesNonSpinnakerRating(): void
+    {
+        Env::addRating('irc', 'MOJITO', 'GBR4822R', 1.084, 1.060);
+        Env::addRating('irc', 'MOJITO - SEC', 'GBR4822R', 1.052, 1.040, ['secondary' => 'SEC']);
+        Env::submit(Env::boat(['Boat_Name' => 'Mojito', 'Sail_Number' => 'GBR 4822R', 'Class_Racing' => 'IRC Non-Spinnaker']));
+        EntriesHelper::setCertificate($this->race, 'Mojito', 'GBR 4822R', 'secondary', 'Pat Office');
+
+        $this->assertSame('1.040', $this->entries()[0]->rating_text);
+    }
+
+    public function testBoatWithoutASecondaryCertificate(): void
+    {
+        Env::addRating('irc', 'SEA BREEZE', 'IRL1234', 1.045);
+        Env::submit(Env::boat(['Boat_Name' => 'Sea Breeze', 'Sail_Number' => 'IRL 1234']));
+        $entry = $this->entries()[0];
+
+        $this->assertFalse($entry->has_secondary);
+        $this->assertSame('primary', $entry->certificate);
+
+        // Chosen all the same (its secondary certificate may have lapsed since): the primary is used and flagged.
+        EntriesHelper::setCertificate($this->race, 'Sea Breeze', 'IRL 1234', 'secondary', 'Pat Office');
+        $entry = $this->entries()[0];
+
+        $this->assertSame('1.045', $entry->rating_text);
+        $this->assertSame('primary', $entry->certificate);
+        $this->assertSame('secondary', $entry->certificate_wanted);
+        $this->assertSame('check', $entry->rating_status);
+        $this->assertSame('Secondary certificate chosen, but the list has none for this boat', $entry->rating_note);
+    }
+
+    public function testSecondaryCertificateIsFoundByNameWhenTheSailNumberWasMistyped(): void
+    {
+        Env::addRating('irc', 'MOJITO', 'GBR4822R', 1.084);
+        Env::addRating('irc', 'MOJITO - SEC', 'GBR4822R', 1.052, null, ['secondary' => 'SEC']);
+        Env::submit(Env::boat(['Boat_Name' => 'Mojito', 'Sail_Number' => 'GBR 9999']));
+        EntriesHelper::setCertificate($this->race, 'Mojito', 'GBR 9999', 'secondary', 'Pat Office');
+        $entry = $this->entries()[0];
+
+        $this->assertTrue($entry->has_secondary);
+        $this->assertSame('1.052', $entry->rating_text);
+        $this->assertSame('check', $entry->rating_status, 'Still flagged: the sail number does not match');
+    }
+
+    public function testAnotherBoatsSecondaryCertificateIsNotBorrowed(): void
+    {
+        Env::addRating('irc', 'SEA BREEZE', 'IRL1234', 1.045);
+        Env::addRating('irc', 'MOJITO', 'GBR4822R', 1.084);
+        Env::addRating('irc', 'MOJITO - SEC', 'GBR4822R', 1.052, null, ['secondary' => 'SEC']);
+        Env::submit(Env::boat(['Boat_Name' => 'Sea Breeze', 'Sail_Number' => 'IRL 1234']));
+        Env::submit(Env::boat(['Boat_Name' => 'Mojito', 'Sail_Number' => 'GBR 4822R']));
+        $entries = array_column($this->entries(), null, 'boat');
+
+        $this->assertFalse($entries['Sea Breeze']->has_secondary);
+        $this->assertTrue($entries['Mojito']->has_secondary);
+    }
+
+    public function testYtcBoatHasNoCertificateChoice(): void
+    {
+        Env::addRating('ytc', 'Slow Coach', 'GBR55', 845);
+        Env::submit(Env::boat(['Boat_Name' => 'Slow Coach', 'Sail_Number' => 'GBR 55', 'Class_Racing' => 'YTC']));
+        $entry = $this->entries()[0];
+
+        $this->assertSame('', $entry->certificate);
+        $this->assertFalse($entry->has_secondary);
+    }
+
+    public function testOnlyPrimaryAndSecondaryCanBeChosen(): void
+    {
+        $this->assertThrows(function () {
+            EntriesHelper::setCertificate($this->race, 'Mojito', 'GBR 4822R', 'tertiary', 'Pat Office');
+        }, 'primary or secondary');
+    }
+
+    public function testDeletingARaceForgetsItsCertificateChoices(): void
+    {
+        $second = Env::addRace('Race 2', '2027-06-12', '2027-06-05 22:59:00', 'Race_2');
+        EntriesHelper::setCertificate($this->race, 'Mojito', 'GBR 4822R', 'secondary', 'Pat Office');
+        EntriesHelper::setCertificate($second, 'Mojito', 'GBR 4822R', 'secondary', 'Pat Office');
+        EntriesHelper::deleteCertificateChoices([$this->race]);
+
+        $this->assertSame([$second], array_map('intval', array_column(Env::rows('#__isorairc_cert_choices'), 'race_id')));
+    }
+
     public function testBoatUsingItsOwnTrackerHasItsSerialNumber(): void
     {
         Env::submit(Env::boat(['OwnTracker' => 'Yes', 'TrackerSerialNumber' => ' 0412345 ']));

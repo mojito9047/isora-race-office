@@ -1,6 +1,6 @@
 # ISORA Race Office: the stored rating data
 
-What ISORA Race Office keeps in the website's database, what each value means, and how another part of the Joomla site (a module, a plugin, another component, a script in a form) can read it. Written for version 1.6.0.
+What ISORA Race Office keeps in the website's database, what each value means, and how another part of the Joomla site (a module, a plugin, another component, a script in a form) can read it. Written for version 1.7.0.
 
 For a system outside the website, use the [API](api.md) instead.
 
@@ -24,6 +24,7 @@ Table names start with the site's database prefix, written `#__` in Joomla code.
 | `#__isorairc_races` | The races and their rating deadlines | When someone edits the races |
 | `#__isorairc_race_snapshots` | One row per race and system once its ratings are frozen | When a snapshot is taken or rebuilt |
 | `#__isorairc_imports` | A log of every download, and the downloads themselves | Every import adds a row |
+| `#__isorairc_cert_choices` | Which boats chose their secondary IRC certificate, per race | When race management or Crewmanager changes a boat's certificate |
 
 All dates with a time are stored in UTC.
 
@@ -89,6 +90,22 @@ Things to know before using these rows:
 
 **Which ratings apply to a race:** if `#__isorairc_race_snapshots` has a row for the race and system, use `#__isorairc_snapshot_ratings` with that `race_id`. Otherwise the deadline has not passed (or no import has run since), and the current ratings in `#__isorairc_ratings` apply.
 
+## Certificate choices
+
+`#__isorairc_cert_choices`
+
+A boat is rated on its primary IRC certificate unless it has a row here for the race. Choosing the primary again deletes the row.
+
+| Column | Meaning |
+|---|---|
+| `race_id` | The race the choice is for |
+| `boat_key` | The boat: its sail number and its name as typed on the entry form, each reduced to capitals and digits, joined by a bar (`GBR4822R|MOJITO`) |
+| `certificate` | Always `secondary` |
+| `set_at` | When it was chosen, in UTC |
+| `set_by` | Who chose it: a race manager's name, or `the API` for Crewmanager |
+
+Read and change these through `EntriesHelper` (`certificateChoices()`, `setCertificate()`), which builds the key the same way the entries do. `setCertificate()` does not check the rating deadline; the API does that itself, and race management are allowed to change it at any time.
+
 ## The archive of downloads
 
 `#__isorairc_imports`
@@ -114,7 +131,7 @@ Entries are read from RSForm! Pro's own tables (`#__rsform_submissions` and `#__
 
 Three rules:
 
-1. **Read only.** Do not write to these tables. The current ratings are replaced on every import, and the frozen ones are the record of what a race was scored on.
+1. **Read only.** Do not write to these tables (certificate choices go through `EntriesHelper::setCertificate()`). The current ratings are replaced on every import, and the frozen ones are the record of what a race was scored on.
 2. **Prefer the extension's own code to your own SQL** where it does what you need. It already knows which list applies to a race and how a boat is matched.
 3. **The tables can gain columns in a later version.** The [changelog](../CHANGELOG.md) says when. Name the columns you select; avoid `SELECT *`.
 
@@ -138,7 +155,7 @@ if ($race) {
 }
 ```
 
-Each entry has `boat`, `sail`, `model`, `class`, `club`, `scheme` (`irc` or `ytc`), `rating` (a number, or null), `rating_text` (the rating as published), `rating_status` and `rating_note`. For IRC boats on the list it also has `cert_no`, `issue_date`, `crew`, `headsails`, `flying_headsails`, `spinnakers` and `sss_base`.
+Each entry has `boat`, `sail`, `model`, `class`, `club`, `scheme` (`irc` or `ytc`), `rating` (a number, or null), `rating_text` (the rating as published), `rating_status` and `rating_note`. For IRC boats on the list it also has `cert_no`, `issue_date`, `crew`, `headsails`, `flying_headsails`, `spinnakers` and `sss_base`, plus `certificate` (`primary` or `secondary`, the certificate all of those come from) and `has_secondary` (true when the list has a secondary certificate for the boat).
 
 `rating_status` is `ok` when the list has a boat with that name and that sail number, `check` when only one of the two matched, `none` when the boat is not on the list, and `off` when that rating system is switched off.
 

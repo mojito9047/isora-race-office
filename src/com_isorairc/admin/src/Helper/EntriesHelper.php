@@ -185,6 +185,11 @@ class EntriesHelper
      * country, photo, owntracker (the answer to "use your own tracker?"), tracker (the serial
      * number of the boat's own tracker, or '' when it is not using one), scheme, rating, rating_text, rating_status (ok|check|none|off), rating_note,
      * cert_no (certificate number of the rating row the boat was matched to, or ''),
+     * certificate ('primary' or 'secondary': the IRC certificate the rating is taken
+     * from, or '' when the boat is not on the IRC list), has_secondary (true when the
+     * list has a secondary certificate for the boat), certificate_wanted ('secondary'
+     * when that was chosen for this race, else 'primary'), certificate_set_at and
+     * certificate_set_by (when and by whom the choice was made, or ''),
      * and for a boat matched to an IRC certificate the IRC_DETAILS (issue_date as
      * YYYY-MM-DD, crew, headsails, flying_headsails, spinnakers, sss_base), each ''
      * when the list has no value.
@@ -308,9 +313,17 @@ class EntriesHelper
         $systems = RatingsHelper::systems();
         $sources = self::ratingSources($race);
         $groups  = [];
+        $choices = self::certificateChoices((int) $race->id);
 
         foreach ($entries as $entry) {
+            $choice = $choices[self::boatKey($entry->boat, $entry->sail)] ?? null;
+
             $entry->scheme        = self::schemeForClass($entry->class);
+            $entry->certificate   = '';
+            $entry->has_secondary = false;
+            $entry->certificate_wanted = $choice ? 'secondary' : 'primary';
+            $entry->certificate_set_at = $choice ? (string) $choice->set_at : '';
+            $entry->certificate_set_by = $choice ? (string) $choice->set_by : '';
             $entry->rating        = null;
             $entry->rating_text   = '';
             $entry->cert_no       = '';
@@ -353,6 +366,8 @@ class EntriesHelper
         foreach ($entries as $entry) {
             if ($entry->boat !== '') {
                 $where[] = 'LOWER(' . $db->quoteName('boat_name') . ') = ' . $db->quote(mb_strtolower($entry->boat));
+                // The list names a boat's secondary certificate "NAME - SEC".
+                $where[] = 'LOWER(' . $db->quoteName('boat_name') . ') = ' . $db->quote(mb_strtolower($entry->boat) . ' - sec');
             }
 
             $plain  = self::plain($entry->sail);
@@ -426,6 +441,23 @@ class EntriesHelper
             return;
         }
 
+        // The boat's other certificate: the secondary one that goes with the row found.
+        $wanted = $entry->certificate_wanted === 'secondary';
+        $pair   = $entry->scheme === 'irc' && empty($best->secondary) ? self::secondaryOf($best, $candidates) : null;
+        $unmet  = '';
+
+        if ($entry->scheme === 'irc') {
+            $entry->has_secondary = $pair !== null;
+
+            if ($wanted && $pair) {
+                $best = $pair;
+            } elseif ($wanted && empty($best->secondary)) {
+                $unmet = 'Secondary certificate chosen, but the list has none for this boat';
+            }
+
+            $entry->certificate = empty($best->secondary) ? 'primary' : 'secondary';
+        }
+
         $entry->cert_no = trim((string) ($best->cert_no ?? ''));
 
         if ($entry->scheme === 'irc') {
@@ -459,6 +491,116 @@ class EntriesHelper
             $entry->rating_status = 'check';
             $entry->rating_note   = 'Sail number matches but the list has boat name ' . $best->boat_name;
         }
+
+        if ($unmet !== '') {
+            $entry->rating_status = 'check';
+            $entry->rating_note   = trim($entry->rating_note . '. ' . $unmet, '. ');
+        }
+    }
+
+    /**
+     * The secondary certificate that belongs to a primary one: the secondary row
+     * with the same sail number, or failing that the same boat name (the list
+     * writes a secondary certificate's name as "NAME - SEC").
+     *
+     * @param object[] $candidates
+     */
+    private static function secondaryOf(object $primary, array $candidates): ?object
+    {
+        $sail  = self::plain((string) $primary->sail_no);
+        $name  = self::plain((string) $primary->boat_name);
+        $named = null;
+
+        foreach ($candidates as $row) {
+            if (empty($row->secondary)) {
+                continue;
+            }
+
+            if ($sail !== '' && self::plain((string) $row->sail_no) === $sail) {
+                return $row;
+            }
+
+            if ($name !== '' && self::plain(preg_replace('/\s*-?\s*SEC\s*$/i', '', (string) $row->boat_name)) === $name) {
+                $named = $row;
+            }
+        }
+
+        return $named;
+    }
+
+    /** How a boat is told apart from the others: its sail number and name, capitals and digits only. */
+    public static function boatKey(string $boat, string $sail): string
+    {
+        return mb_substr(self::plain($sail) . '|' . self::plain($boat), 0, 190);
+    }
+
+    /**
+     * The boats that chose their secondary certificate for a race, as boat key => row
+     * (set_at, set_by). A boat without a row is on its primary certificate.
+     *
+     * @return array<string, object>
+     */
+    public static function certificateChoices(int $raceId): array
+    {
+        $db    = self::db();
+        $query = $db->getQuery(true)
+            ->select($db->quoteName(['boat_key', 'certificate', 'set_at', 'set_by']))
+            ->from($db->quoteName('#__isorairc_cert_choices'))
+            ->where($db->quoteName('race_id') . ' = ' . $raceId)
+            ->where($db->quoteName('certificate') . ' = ' . $db->quote('secondary'));
+
+        return $db->setQuery($query)->loadObjectList('boat_key') ?: [];
+    }
+
+    /**
+     * Record which IRC certificate a boat uses for a race. This does not look at
+     * the rating deadline: the caller decides who may change it and when.
+     *
+     * @param string $certificate 'primary' or 'secondary'
+     * @param string $by          Who made the choice, for race management to see
+     */
+    public static function setCertificate(int $raceId, string $boat, string $sail, string $certificate, string $by): void
+    {
+        if (!\in_array($certificate, ['primary', 'secondary'], true)) {
+            throw new \InvalidArgumentException('The certificate must be primary or secondary.');
+        }
+
+        $db  = self::db();
+        $key = self::boatKey($boat, $sail);
+
+        $query = $db->getQuery(true)
+            ->delete($db->quoteName('#__isorairc_cert_choices'))
+            ->where($db->quoteName('race_id') . ' = ' . $raceId)
+            ->where($db->quoteName('boat_key') . ' = ' . $db->quote($key));
+        $db->setQuery($query)->execute();
+
+        if ($certificate === 'secondary') {
+            $row = (object) [
+                'race_id' => $raceId, 'boat_key' => $key, 'certificate' => 'secondary',
+                'set_at' => Factory::getDate()->toSql(), 'set_by' => mb_substr($by, 0, 100),
+            ];
+            $db->insertObject('#__isorairc_cert_choices', $row);
+        }
+    }
+
+    /**
+     * Forget the certificate choices of the given races.
+     *
+     * @param int[] $raceIds
+     */
+    public static function deleteCertificateChoices(array $raceIds): void
+    {
+        $raceIds = array_filter(array_map('intval', $raceIds));
+
+        if (!$raceIds) {
+            return;
+        }
+
+        $db    = self::db();
+        $query = $db->getQuery(true)
+            ->delete($db->quoteName('#__isorairc_cert_choices'))
+            ->where($db->quoteName('race_id') . ' IN (' . implode(',', $raceIds) . ')');
+        $db->setQuery($query)->execute();
     }
 
     /** True when the entry has at least one detail from its IRC certificate. */

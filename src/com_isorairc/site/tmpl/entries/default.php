@@ -32,12 +32,16 @@ foreach ($this->entries as $entry) {
 	.com-isorairc-entries .isorairc-detail { display: block; font-size: 0.9em; opacity: 0.85; }
 	.com-isorairc-entries .isorairc-flag { font-weight: 700; opacity: 1; }
 	/* The Boat data button is a small form (the RORC page only takes a posted search), drawn as a link. */
-	.com-isorairc-entries form.isorairc-boatdata { display: block; margin: 0; }
-	.com-isorairc-entries form.isorairc-boatdata button {
+	.com-isorairc-entries form.isorairc-boatdata,
+	.com-isorairc-entries form.isorairc-cert { display: block; margin: 0; }
+	.com-isorairc-entries form.isorairc-boatdata button,
+	.com-isorairc-entries form.isorairc-cert button {
 		padding: 0; border: 0; background: none; color: #b8560f; font: inherit; font-size: 0.9em; text-decoration: underline; cursor: pointer;
 	}
 	.com-isorairc-entries form.isorairc-boatdata button:hover,
-	.com-isorairc-entries form.isorairc-boatdata button:focus { color: #333; }
+	.com-isorairc-entries form.isorairc-boatdata button:focus,
+	.com-isorairc-entries form.isorairc-cert button:hover,
+	.com-isorairc-entries form.isorairc-cert button:focus { color: #333; }
 	/* The IRC data button opens a pop-up with details from the boat's certificate. */
 	.com-isorairc-entries button.isorairc-ircdata {
 		display: block; padding: 0; border: 0; background: none; color: #b8560f; font: inherit; font-size: 0.9em; text-decoration: underline; cursor: pointer;
@@ -151,6 +155,9 @@ foreach ($this->entries as $entry) {
 									<?php elseif ($entry->rating_status !== 'off') : ?>
 										<span class="text-muted">Not listed</span>
 									<?php endif; ?>
+									<?php if ($entry->certificate === 'secondary') : ?>
+										<span class="isorairc-detail">Secondary certificate</span>
+									<?php endif; ?>
 									<?php if ($entry->scheme === 'irc' && EntriesHelper::hasIrcDetails($entry)) : ?>
 										<button type="button" class="isorairc-ircdata" aria-haspopup="dialog" onclick="this.nextElementSibling.showModal()">IRC data</button>
 										<dialog class="isorairc-dialog" aria-label="IRC data for <?php echo $this->escape($entry->boat); ?>" onclick="if (event.target === this) { this.close(); }">
@@ -181,6 +188,22 @@ foreach ($this->entries as $entry) {
 										<?php endif; ?>
 										<?php if ($entry->declared !== '') : ?>
 											<span class="isorairc-detail">On form: <?php echo $this->escape($entry->declared); ?></span>
+										<?php endif; ?>
+										<?php if ($entry->certificate_wanted === 'secondary' && $entry->certificate_set_at !== '') : ?>
+											<span class="isorairc-detail">Secondary chosen <?php echo HTMLHelper::_('date', $entry->certificate_set_at, $format); ?><?php echo $entry->certificate_set_by !== '' ? ' by ' . $this->escape($entry->certificate_set_by) : ''; ?></span>
+										<?php endif; ?>
+										<?php if ($entry->scheme === 'irc' && ($entry->has_secondary || $entry->certificate_wanted === 'secondary')) : ?>
+											<?php $other = $entry->certificate_wanted === 'secondary' ? 'primary' : 'secondary'; ?>
+											<form class="isorairc-cert" method="post" action="<?php echo Route::_('index.php?option=com_isorairc&view=entries'); ?>">
+												<input type="hidden" name="option" value="com_isorairc">
+												<input type="hidden" name="task" value="entries.certificate">
+												<input type="hidden" name="race" value="<?php echo (int) $this->race->id; ?>">
+												<input type="hidden" name="boat" value="<?php echo $this->escape($entry->boat); ?>">
+												<input type="hidden" name="sail" value="<?php echo $this->escape($entry->sail); ?>">
+												<input type="hidden" name="certificate" value="<?php echo $other; ?>">
+												<?php echo HTMLHelper::_('form.token'); ?>
+												<button type="submit">Use <?php echo $other; ?> certificate</button>
+											</form>
 										<?php endif; ?>
 										<?php if ($this->boatDataUrl !== '' && $entry->scheme === 'irc' && $entry->cert_no !== '') : ?>
 											<form class="isorairc-boatdata" method="post" action="<?php echo $this->escape($this->boatDataUrl); ?>" target="_blank" rel="noopener noreferrer">

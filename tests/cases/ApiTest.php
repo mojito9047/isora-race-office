@@ -2,6 +2,7 @@
 
 namespace IsoraTests\Cases;
 
+use Isora\Component\Isorairc\Administrator\Helper\EntriesHelper;
 use IsoraTests\Browser;
 use IsoraTests\Env;
 use IsoraTests\Response;
@@ -99,7 +100,7 @@ class ApiTest extends SiteTest
         $this->assertSame(
             [
                 'boat' => 'Sea Breeze', 'sail_number' => 'IRL 1234', 'type' => 'J/109', 'class' => 'IRC', 'club' => 'Test Yacht Club',
-                'rating_system' => 'IRC', 'rating' => 1.045, 'rating_confirmed' => true,
+                'rating_system' => 'IRC', 'rating' => 1.045, 'rating_confirmed' => true, 'certificate' => 'primary', 'secondary_available' => false,
                 'person_in_charge' => ['name' => 'Pat Skipper', 'email' => 'pat.skipper@example.invalid', 'phone' => '+353 85 555 0100'],
                 'entered_at' => '2026-10-01T10:00:00Z',
             ],
@@ -112,6 +113,8 @@ class ApiTest extends SiteTest
         $this->assertSame(null, $ytc['rating'], 'Not on the YTC list');
         $this->assertSame(false, $ytc['rating_confirmed']);
         $this->assertSame('2026-10-02T08:30:00Z', $ytc['entered_at']);
+        $this->assertSame(null, $ytc['certificate'], 'Not on a list, so on no certificate');
+        $this->assertSame(false, $ytc['secondary_available']);
     }
 
     public function testOnlyBoatsEnteredForThatRaceAreGiven(): void
@@ -171,6 +174,165 @@ class ApiTest extends SiteTest
             $this->assertSame(404, $response->status, 'Race ' . $id);
             $this->assertSame(['error' => 'Race not found.'], json_decode($response->body, true));
         }
+    }
+
+    // ------------------------------------------------------------ choosing a certificate
+
+    private const CERTIFICATE = '/index.php?option=com_isorairc&task=api.certificate&format=json';
+
+    private function mojito(): void
+    {
+        Env::addRating('irc', 'MOJITO', 'GBR4822R', 1.084);
+        Env::addRating('irc', 'MOJITO - SEC', 'GBR4822R', 1.052, null, ['secondary' => 'SEC']);
+        Env::submit(Env::boat(['Boat_Name' => 'Mojito', 'Sail_Number' => 'GBR 4822R']));
+    }
+
+    /** Ask for a certificate as Crewmanager would. */
+    private function choose(array $fields, ?string $key = self::KEY, bool $asJson = false): Response
+    {
+        $headers = $key === null ? [] : ['X-Api-Key: ' . $key];
+
+        if ($asJson) {
+            $headers[] = 'Content-Type: application/json';
+        }
+
+        return (new Browser())->post(self::CERTIFICATE, $asJson ? json_encode($fields) : $fields, true, $headers);
+    }
+
+    private function mojitoFields(string $certificate, ?int $race = null): array
+    {
+        return ['race' => $race ?? $this->race, 'boat' => 'Mojito', 'sail_number' => 'GBR 4822R', 'certificate' => $certificate];
+    }
+
+    public function testEntriesSayWhichCertificateABoatIsOnAndWhetherItHasASecondary(): void
+    {
+        $this->mojito();
+        $entry = $this->json(self::ENTRIES . $this->race)['entries'][0];
+
+        $this->assertSame('primary', $entry['certificate']);
+        $this->assertSame(true, $entry['secondary_available']);
+        $this->assertSame(1.084, $entry['rating']);
+    }
+
+    public function testSecondaryCertificateCanBeChosenBeforeTheDeadline(): void
+    {
+        $this->mojito();
+        $response = $this->choose($this->mojitoFields('secondary'));
+
+        $this->assertSame(200, $response->status, $response->body);
+        $this->assertNoPhpErrors($response);
+        $data = json_decode($response->body, true);
+        $this->assertSame($this->race, $data['race']['id']);
+        $this->assertSame('Mojito', $data['entry']['boat']);
+        $this->assertSame('secondary', $data['entry']['certificate']);
+        $this->assertSame(1.052, $data['entry']['rating']);
+
+        $entry = $this->json(self::ENTRIES . $this->race)['entries'][0];
+        $this->assertSame(['secondary', 1.052, true], [$entry['certificate'], $entry['rating'], $entry['rating_confirmed']]);
+        $this->assertSame('the API', Env::rows('#__isorairc_cert_choices')[0]->set_by);
+    }
+
+    public function testChoiceCanBeSentAsJsonAndChangedBackToPrimary(): void
+    {
+        $this->mojito();
+        $this->assertSame(200, $this->choose($this->mojitoFields('secondary'), self::KEY, true)->status);
+        $this->assertSame('secondary', $this->json(self::ENTRIES . $this->race)['entries'][0]['certificate']);
+
+        $back = $this->choose($this->mojitoFields('PRIMARY'), self::KEY, true);
+        $this->assertSame(200, $back->status);
+        $this->assertSame('primary', json_decode($back->body, true)['entry']['certificate']);
+        $this->assertSame(1.084, $this->json(self::ENTRIES . $this->race)['entries'][0]['rating']);
+    }
+
+    public function testBoatIsRecognisedHoweverItsNameAndSailNumberAreSpaced(): void
+    {
+        $this->mojito();
+        $response = $this->choose(['race' => $this->race, 'boat' => 'MOJITO', 'sail_number' => 'gbr4822r', 'certificate' => 'secondary']);
+
+        $this->assertSame(200, $response->status);
+        $this->assertSame('Mojito', json_decode($response->body, true)['entry']['boat'], 'Answered with the entry as typed on the form');
+    }
+
+    public function testChoiceIsRefusedOnceTheRatingDeadlineHasPassed(): void
+    {
+        $this->mojito();
+        $past = Env::addRace('Deadline gone', Env::localDate(Env::utc('+3 days')), Env::utc('-1 minute'), 'Race_1');
+        $soon = Env::addRace('Deadline near', Env::localDate(Env::utc('+8 days')), Env::utc('+5 minutes'), 'Race_1');
+
+        $late = $this->choose($this->mojitoFields('secondary', $past));
+        $this->assertSame(409, $late->status);
+        $this->assertSame(['error' => 'The rating deadline for this race has passed.'], json_decode($late->body, true));
+        $this->assertCount(0, Env::rows('#__isorairc_cert_choices'), 'Nothing was changed');
+
+        $this->assertSame(200, $this->choose($this->mojitoFields('secondary', $soon))->status, 'Minutes before the deadline is still in time');
+
+        // Nor can the API take a boat back off its secondary certificate after the deadline.
+        EntriesHelper::setCertificate($past, 'Mojito', 'GBR 4822R', 'secondary', 'Pat Office');
+        $this->assertSame(409, $this->choose($this->mojitoFields('primary', $past))->status);
+        $this->assertSame('secondary', $this->json(self::ENTRIES . $past)['entries'][0]['certificate']);
+    }
+
+    public function testChoiceNeedsTheKey(): void
+    {
+        $this->mojito();
+
+        $this->assertSame(401, $this->choose($this->mojitoFields('secondary'), null)->status, 'No key');
+        $this->assertSame(401, $this->choose($this->mojitoFields('secondary'), 'wrong-key-0123456789-abcdefghij')->status, 'Wrong key');
+
+        $office = new Browser();
+        $office->loginSite(...Env::user('office'));
+        $this->assertSame(401, $office->post(self::CERTIFICATE, $this->mojitoFields('secondary'))->status, 'Signed in, but no key');
+
+        Env::setParams(['api_key' => '']);
+        $this->assertSame(404, $this->choose($this->mojitoFields('secondary'))->status, 'API switched off');
+
+        $this->assertCount(0, Env::rows('#__isorairc_cert_choices'), 'Nothing was changed');
+    }
+
+    public function testChoiceMustBePosted(): void
+    {
+        $this->mojito();
+        $response = $this->get(self::CERTIFICATE . '&' . http_build_query($this->mojitoFields('secondary')));
+
+        $this->assertSame(405, $response->status);
+        $this->assertSame(['error' => 'Use POST to choose a certificate.'], json_decode($response->body, true));
+        $this->assertCount(0, Env::rows('#__isorairc_cert_choices'));
+    }
+
+    public function testBadChoicesAreRefusedWithAReason(): void
+    {
+        $this->mojito();
+        Env::addRating('irc', 'SEA BREEZE', 'IRL1234', 1.045);
+        Env::submit(Env::boat(['Boat_Name' => 'Sea Breeze', 'Sail_Number' => 'IRL 1234']));
+        Env::submit(Env::boat(['Boat_Name' => 'Not Racing', 'Sail_Number' => 'IRL 5', 'Race_1' => 'No']));
+        $unlinked = Env::addRace('Not on the form', '2027-04-01', '2027-03-25 23:59:00');
+
+        $cases = [
+            'no certificate'        => [400, 'certificate must be "primary" or "secondary".', ['certificate' => ''] + $this->mojitoFields('')],
+            'unknown certificate'   => [400, 'certificate must be "primary" or "secondary".', $this->mojitoFields('tertiary')],
+            'no boat'               => [400, 'Give the boat and its sail_number.', ['race' => $this->race, 'certificate' => 'secondary']],
+            'unknown race'          => [404, 'Race not found.', $this->mojitoFields('secondary', 999999)],
+            'race not on the form'  => [404, 'Race not found.', $this->mojitoFields('secondary', $unlinked)],
+            'boat not entered'      => [404, 'Boat not entered for this race.', ['race' => $this->race, 'boat' => 'Not Racing', 'sail_number' => 'IRL 5', 'certificate' => 'secondary']],
+            'unknown boat'          => [404, 'Boat not entered for this race.', ['race' => $this->race, 'boat' => 'Nobody', 'sail_number' => 'X1', 'certificate' => 'secondary']],
+            'boat with one cert'    => [409, 'This boat has no secondary certificate on the IRC list.', ['race' => $this->race, 'boat' => 'Sea Breeze', 'sail_number' => 'IRL 1234', 'certificate' => 'secondary']],
+        ];
+
+        foreach ($cases as $what => [$status, $error, $fields]) {
+            $response = $this->choose($fields);
+            $this->assertSame($status, $response->status, $what);
+            $this->assertSame(['error' => $error], json_decode($response->body, true), $what);
+        }
+
+        $this->assertCount(0, Env::rows('#__isorairc_cert_choices'), 'Nothing was changed');
+    }
+
+    public function testChoosingPrimaryForABoatWithOneCertificateIsAccepted(): void
+    {
+        Env::addRating('irc', 'SEA BREEZE', 'IRL1234', 1.045);
+        Env::submit(Env::boat(['Boat_Name' => 'Sea Breeze', 'Sail_Number' => 'IRL 1234']));
+
+        $this->assertSame(200, $this->choose(['race' => $this->race, 'boat' => 'Sea Breeze', 'sail_number' => 'IRL 1234', 'certificate' => 'primary'])->status);
     }
 
     // ------------------------------------------------------------ the key

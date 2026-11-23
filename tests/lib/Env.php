@@ -25,7 +25,7 @@ class Env
 
     public const TABLES = [
         '#__isorairc_ratings', '#__isorairc_snapshot_ratings', '#__isorairc_race_snapshots',
-        '#__isorairc_races', '#__isorairc_imports',
+        '#__isorairc_races', '#__isorairc_imports', '#__isorairc_cert_choices',
     ];
 
     public const FORM_TABLES = [

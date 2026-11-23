@@ -2,6 +2,14 @@
 
 Changes to ISORA Race Office (Joomla package `pkg_isorairc`), newest first.
 
+## 1.7.0 (23 November 2026)
+
+- New: **primary or secondary IRC certificate, per race**. A boat is rated on its primary certificate unless its secondary one is chosen for that race. The choice is for one race and one boat, and it stays if the boat sends its entry form again.
+- Race entries page, race management view: an IRC boat that has a secondary certificate on the list gets a **Use secondary certificate** link under its rating (**Use primary certificate** once it is on the secondary). Race management can swap at any time, also after the rating deadline; after the deadline the frozen rating of the chosen certificate is used. The page shows when the secondary was chosen and by whom.
+- Everyone sees **Secondary certificate** under the rating of a boat that is on it. The rating, the IRC data pop-up, the Boat data link, the CSV download and the YB fleetsheet all follow the chosen certificate. The CSV download has a new column, **IRC certificate** (Primary or Secondary).
+- API: each boat now comes with `certificate` (`primary` or `secondary`) and `secondary_available`. A new call, `api.certificate`, lets Crewmanager choose a boat's certificate for a race. It is refused once the race's rating deadline has passed. The API is therefore no longer read-only: the key now allows this one change. Details in `docs/api.md`.
+- If the secondary certificate was chosen but the list no longer has one for the boat, the primary rating is used and the entry is flagged for checking.
+
 ## 1.6.0 (23 November 2026)
 
 - New: **IRC data pop-up** on the Race entries page. Each IRC boat that is on the rating list has an **IRC data** link under its rating. It opens a small window with the boat's certificate details: issue date, crew, headsails, flying headsails, spinnakers and SSS base value. Everyone who can see the page gets it; the values are the ones RORC publish. For a race whose ratings are frozen, the values are the frozen ones.

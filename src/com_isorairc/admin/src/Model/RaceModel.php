@@ -57,7 +57,7 @@ class RaceModel extends AdminModel
     }
 
     /**
-     * Deleting a race also deletes its snapshots.
+     * Deleting a race also deletes its snapshots and its boats' certificate choices.
      */
     public function delete(&$pks)
     {
@@ -68,6 +68,7 @@ class RaceModel extends AdminModel
         }
 
         RatingsHelper::deleteSnapshots($ids);
+        EntriesHelper::deleteCertificateChoices($ids);
 
         return true;
     }

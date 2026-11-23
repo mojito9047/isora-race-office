@@ -1,13 +1,16 @@
 # ISORA Race Office: admin guide
 
-How to install the ISORA Race Office extension on the ISORA Joomla site and set it up. Written for version 1.6.0.
+How to install the ISORA Race Office extension on the ISORA Joomla site and set it up. Written for version 1.7.0.
+
+For the people who run the races there is a shorter [guide for race organisers](race-office-guide.md), about using the Race entries page once everything here is set up.
 
 ## What it does
 
 - **Rating lookup.** Downloads the published IRC and YTC rating lists once a day and gives the site a page where anyone can look up a boat by name or sail number.
 - **Ratings frozen at each race's deadline.** For every race you add, it keeps a copy of all ratings as they stood at that race's rating deadline. A certificate reissued after the deadline does not change the frozen rating.
-- **Race entries.** Reads the RSForm! Pro entry form and lists the boats entered for each race, with each boat's rating filled in from the lists.
+- **Race entries.** Reads the RSForm! Pro entry form and lists the boats entered for each race, with each boat's rating filled in from the lists and, for IRC boats, details from the certificate. Race management also see contact details, can download the list, and can put a boat on its secondary IRC certificate for a race.
 - **YB fleetsheet.** Lets race management download the YB Tracking fleet information sheet for a race, already filled in. Boats using their own tracker have its serial number filled in; the other tracker numbers are left for you.
+- **API.** Lets another system, such as Crewmanager, read the races and entries with a key, and choose a boat's IRC certificate for a race until its rating deadline.
 
 The extension never changes the entry form or its submissions. It only reads them.
 
@@ -33,7 +36,7 @@ Take a backup of the site first, as for any extension install.
 
 This installs two things: the **ISORA Race Office** component (under the **Components** menu) and a scheduled-task plugin called **Task - ISORA Race Office**, which is switched on automatically.
 
-To update later, upload the newer package zip the same way. Races, snapshots and settings are kept.
+To update later, upload the newer package zip the same way. Races, snapshots, certificate choices and settings are kept. Then click **Import ratings now** (step 3) once: a new version sometimes keeps more of each rating list than the one before, and the import fills that in. The changelog says when it matters.
 
 ## 2. Check the rating sources
 
@@ -106,7 +109,7 @@ The list shows each race's deadline and, per rating system, whether its snapshot
 
 If you change a race's date or number of days after its snapshot was taken, tick the race and click **Rebuild snapshot**. This works from the archived downloads, so it gives the same result as if the race had been set up correctly from the start.
 
-Deleting a race also deletes its snapshots.
+Deleting a race also deletes its snapshots and any certificate choices made for it (step 8).
 
 ## 6. Add the rating lookup page
 
@@ -161,16 +164,18 @@ Same as step 6, but choose **ISORA Race Office → Race entries**.
 - A boat that sent the form more than once is counted once. Its most recent form decides which races it is in.
 - The class chosen on the form decides the rating shown: classes starting "YTC" use the YTC list, everything else uses IRC, and non-spinnaker classes use the non-spinnaker rating.
 - Until a race's rating deadline the current rating is shown; afterwards the frozen one.
+- An IRC boat with two certificates is rated on its primary one, unless its secondary one has been chosen for that race (step 8).
 - A rating followed by **?** was matched on boat name or sail number only. **Not listed** means no boat with that name or sail number is on the list.
 - Every entered boat is listed. The form's optional publication-consent box is not taken into account.
 
 ## 8. Who sees what
 
-The public version of the Race entries page shows boat, sail number, type, class, club and rating. Under the rating of each IRC boat that is on the rating list there is an **IRC data** link, which opens a small window with details from the boat's certificate: issue date, crew, headsails, flying headsails, spinnakers and SSS base value. These are the values RORC publish in the IRC list, the current ones until the race's rating deadline and the frozen ones afterwards. A dash means the list has no value.
+The public version of the Race entries page shows boat, sail number, type, class, club and rating. Under the rating of each IRC boat that is on the rating list there is an **IRC data** link, which opens a small window with details from the boat's certificate: issue date, crew, headsails, flying headsails, spinnakers and SSS base value. These are the values RORC publish in the IRC list, the current ones until the race's rating deadline and the frozen ones afterwards. A dash means the list has no value. A boat that is rated on its secondary certificate has **Secondary certificate** under its rating.
 
 People who are allowed to manage the component also see, in the same table, a note under any rating that needs checking, the rating typed on the form, a Contact column (person in charge, mobile, e-mail) and an Entry column (entry type, when the form was sent and, for a boat using its own tracker, the tracker number; "no number given" means the boat answered Yes but left the number empty). The CSV download also has the serial number of a boat's own tracker and, for IRC boats, the six certificate details from the IRC data window, each in its own column. They also get two orange buttons above the table: **Download CSV** and **Download YB fleetsheet** (step 9).
 
 - Under the rating of each IRC boat they also get a **Boat data** link. It opens RORC's "Boat data for valid IRC certificates" page in a new tab, already searched for that boat's certificate number, with a Download link for the boat's data sheet. RORC only list certificates that are valid now, so for a race whose ratings are frozen, a boat whose certificate has since been reissued may give no result; search for its sail number on that page instead.
+- **Primary or secondary certificate.** Some IRC boats have two certificates. A boat is rated on its primary one unless its secondary one is chosen for the race. A boat that has a secondary certificate on the list has a **Use secondary certificate** link under its rating; click it to put the boat on that certificate for the race being shown, and **Use primary certificate** to put it back. The choice is for that race only. You can swap at any time, also after the rating deadline, when the frozen rating of the chosen certificate is used. The boat's crew can make the same choice in Crewmanager, but only until the rating deadline (step 10). Under the rating you see when the secondary was chosen and by whom ("the API" means Crewmanager). The rating, the IRC data window, the Boat data link, the CSV download (column **IRC certificate**) and the YB fleetsheet all follow the choice. If a boat chose its secondary certificate and the list later has none for it, its primary rating is shown with a note to check.
 - That permission is **Access Administration Interface** for ISORA Race Office, set under **Components → ISORA Race Office → Options → Permissions**. Super Users always have it.
 - They must be logged in on the public site, for example through the site's "Admin Log In" page. Being logged in to the administrator area alone is not enough.
 
@@ -185,7 +190,7 @@ The file is YB's own workbook with one row per entered boat.
 | Serial | Left empty. |
 | Tracker ID | The number of the boat's own tracker, for boats that answered Yes to "Do you wish to use your own tracker" on the entry form and gave a number. Empty for every other boat; add these by hand when the trackers are allocated. |
 | Yacht Name, Model, Sail Number | From the entry form. |
-| Handicap (TCF 1) | The boat's IRC rating: the current one before the race's rating deadline, the frozen one after. Empty if the boat is not on the IRC list, and for YTC boats. |
+| Handicap (TCF 1) | The boat's IRC rating: the current one before the race's rating deadline, the frozen one after, from its secondary certificate if that was chosen for the race. Empty if the boat is not on the IRC list, and for YTC boats. |
 | Owner, Skipper | Both take the form's "Full Name(s)". |
 | Type | The same for every boat (a setting). |
 | Country/Flag | From the owner's country on the form, using the flag codes setting. |
@@ -217,13 +222,13 @@ Download the sheet after the rating deadline if you want the frozen ratings in i
 
 ## 10. API for Crewmanager
 
-Another system, such as Crewmanager, can read the races and the boats entered for each one straight from the site. It can only read, and only with a key that you set.
+Another system, such as Crewmanager, can read the races and the boats entered for each one straight from the site, with a key that you set. With the same key it can make one change: choose whether a boat uses its primary or its secondary IRC certificate for a race, until that race's rating deadline. It cannot change anything else.
 
 1. Make a long random key of at least 20 characters, for example with a password manager's generator. Use letters and digits.
 2. Go to **Components → ISORA Race Office → Options → API**, put it in **API key** and click **Save & Close**.
 3. Give the key and the file `docs/api.md` (addresses and the layout of the answers) to the people who run the other system. Send the key privately, not in a group e-mail.
 
-What the other system gets for each race: its name, date and rating deadline, and for each boat entered its name, sail number, type, class, club, rating and the person in charge with their e-mail address and mobile number. It does not get the entry type, the tracker number or anything else from the form.
+What the other system gets for each race: its name, date and rating deadline, and for each boat entered its name, sail number, type, class, club, rating, which IRC certificate the rating is from, whether the boat has a secondary certificate, and the person in charge with their e-mail address and mobile number. It does not get the entry type, the tracker number or anything else from the form.
 
 - Because the answers hold contact details, give the key only to a system that ISORA's privacy notice lets hold them.
 - To cut a system off, change the key. To switch the API off, empty the field. A key shorter than 20 characters also leaves it off.
@@ -236,6 +241,7 @@ What the other system gets for each race: its name, date and rating deadline, an
 - [ ] The rating lookup page finds a boat you know.
 - [ ] The Race entries page lists the races and the boats entered.
 - [ ] Logged in on the public site as a manager, the extra columns and **Download CSV** appear.
+- [ ] An IRC boat on the list has an **IRC data** link that opens a window with six values, none of them a dash.
 - [ ] **Download YB fleetsheet** gives a workbook that opens in Excel and lists the race's boats.
 - [ ] **System → Maintenance → Database** shows no problems for ISORA Race Office.
 
@@ -254,14 +260,19 @@ What the other system gets for each race: its name, date and rating deadline, an
 | A boat's Country/Flag is empty on the fleetsheet | Its country is not in the flag codes setting | Add a line for it in Options → YB fleetsheet. |
 | A boat is in no IRC class column | It has no rating, or no band starts low enough | Check the boat's rating; make the lowest band start at 0. |
 | No manager columns | Not logged in on the public site, or no permission | Step 8. |
+| The IRC data window shows dashes | The extension was updated and no import has run since, or the race was frozen before version 1.6.0 | Click **Import ratings now**. For a frozen race, tick it and click **Rebuild snapshot**. |
+| No **Use secondary certificate** link for a boat | The IRC list has no secondary certificate with that boat's sail number (in a frozen race: had none at the deadline), or the boat is not matched to the list at all | Look the sail number up on the rating lookup page; a secondary certificate is listed as "NAME - SEC". |
+| A boat's rating has the note "Secondary certificate chosen, but the list has none for this boat" | Its secondary certificate has lapsed or been withdrawn since it was chosen | Its primary rating is being used. Click **Use primary certificate** to clear the note, or check with the boat. |
+| Crewmanager reports "The rating deadline for this race has passed" | It tried to change a boat's certificate after the deadline | Change it yourself on the Race entries page (step 8) if it should be allowed. |
+| Crewmanager reports "The API is switched off" or "A valid API key is required" | No key is set, it is shorter than 20 characters, or Crewmanager has a different one | Step 10. |
 
 ## Removing the extension
 
-**System → Manage → Extensions**, find the **ISORA Race Office** package and uninstall it. This deletes the races, snapshots and archived rating downloads. The entry form and its submissions are not touched.
+**System → Manage → Extensions**, find the **ISORA Race Office** package and uninstall it. This deletes the races, snapshots, certificate choices and archived rating downloads. The entry form and its submissions are not touched.
 
 ## Next season
 
 1. Put the new entry form's ID in **Options → Entry form** and check the field names, including the two on the **YB fleetsheet** tab.
 2. Add the new season's races and link each to its question.
 3. Check the IRC class bands on the **YB fleetsheet** tab against the new Notice of Race.
-4. Old races and their snapshots can stay; they remain available in the rating lookup's "Ratings as at" list.
+4. Old races, their snapshots and their certificate choices can stay; they remain available in the rating lookup's "Ratings as at" list.

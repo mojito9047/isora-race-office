@@ -29,6 +29,7 @@ Uploading a newer package updates an existing install in place; races, snapshots
 
 - [Admin guide](docs/admin-guide.md): installing, setting up, and what to do when something goes wrong.
 - [API](docs/api.md): the addresses and answers of the feed for Crewmanager.
+- [Stored data](docs/data.md): the rating tables, what each value means, and how other parts of the Joomla site can read them.
 - [Changelog](CHANGELOG.md): what changed in each version.
 - [Tests](tests/README.md): what the automated tests cover and how to run them.
 

@@ -30,10 +30,20 @@
 			required="true"
 		/>
 		<field
+			name="form_id"
+			type="number"
+			label="Entry form ID"
+			description="The RSForm! Pro form this race's entries are read from. Leave empty to use the form set in the options (shown in grey); it is then filled in when you save. Change it only to link the race to another season's form: the question list below is reloaded for that form."
+			min="1"
+			step="1"
+			filter="integer"
+			onchange="Joomla.submitform('race.reload', this.form, false)"
+		/>
+		<field
 			name="entry_field"
 			type="list"
 			label="Entry form question"
-			description="The yes/no question on the entry form that asks whether a boat is entering this race. Leave empty to keep this race off the Race entries page."
+			description="The yes/no question on that entry form that asks whether a boat is entering this race. Leave empty to keep this race off the Race entries page."
 			default=""
 			>
 			<option value="">- Not on the entry form -</option>

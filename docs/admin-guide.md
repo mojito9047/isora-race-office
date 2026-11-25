@@ -1,6 +1,6 @@
 # ISORA Race Office: admin guide
 
-How to install the ISORA Race Office extension on the ISORA Joomla site and set it up. Written for version 1.8.0.
+How to install the ISORA Race Office extension on the ISORA Joomla site and set it up. Written for version 1.9.0.
 
 For the people who run the races there is a shorter [guide for race organisers](race-office-guide.md), about using the Race entries page once everything here is set up.
 
@@ -101,6 +101,7 @@ For each race:
 | Race name | As it should appear on the site. |
 | Race date | The day of the race. |
 | Rating deadline (days before race) | Usually 7. |
+| Entry form ID | Leave empty. It is filled in with the form from the options when the race is saved (step 7). |
 | Entry form question | The question on the entry form that asks about this race. See step 7; leave empty until the entry form is linked. |
 
 3. Click **Save & Close**.
@@ -126,7 +127,7 @@ Visitors can search current ratings or, from the "Ratings as at" list, the ratin
 
 1. Find the entry form's ID: **Components → RSForm! Pro → Manage Forms**, in the ID column.
 2. Go to **Components → ISORA Race Office → Options → Entry form**.
-3. Put that number in **Entry form ID**.
+3. Put that number in **Entry form ID**. This is the form that races are linked to when they are saved; a race that is already linked keeps its own form.
 4. Check the field names. They are filled in for the 2027 entry form:
 
 | Setting | 2027 form field name |
@@ -150,10 +151,45 @@ These are the fields' names in RSForm, not their captions. If a field is renamed
 ### Link each race to its question
 
 1. Open each race (**Components → ISORA Race Office**, click the race name).
-2. In **Entry form question**, pick the question for that race. The list shows only the form's yes/no race questions.
-3. Save.
+2. Leave **Entry form ID** empty. The grey number in it is the form from the options, which is the one that will be used.
+3. In **Entry form question**, pick the question for that race. The list shows only the form's yes/no race questions.
+4. Save. The race now remembers the form: the race list shows it under the question, as "Form 13".
 
 A race with no question chosen does not appear on the Race entries page.
+
+Each race reads its own form. Changing **Entry form ID** in the options later does not move races that are already linked; to move one, type the other form's ID in the race's own **Entry form ID** (the question list reloads for that form) and pick its question.
+
+Do not rename a race question on the form once boats have entered: RSForm! Pro keeps the answers already sent under the old name, so those boats drop off the list. If it has to be renamed, pick the new name in each race afterwards and ask the boats that had entered to send the form again.
+
+### Optional: fill in the rating and issue date on the form
+
+The entry form can take a boat's IRC rating and the issue date of its certificate from the IRC list as the form is sent, so that both are right in the confirmation e-mail and on the submission.
+
+1. In **Components → RSForm! Pro → Manage Forms**, open the form, then **Properties → PHP Scripts**.
+2. Paste this into **Script called on form process**, below anything already there:
+
+```php
+// ISORA Race Office: fill in the IRC rating and the certificate issue date from the IRC list.
+if (class_exists('\\Isora\\Component\\Isorairc\\Administrator\\Helper\\EntriesHelper')) {
+    \Isora\Component\Isorairc\Administrator\Helper\EntriesHelper::fillFromIrcList($_POST['form'], [
+        'rating'     => 'Latest_IRC_TCC',
+        'issue_date' => 'IRCCertIssueDate',
+    ]);
+}
+```
+
+3. `Latest_IRC_TCC` and `IRCCertIssueDate` are the names of the two fields on the 2027 form. Change them if the fields are renamed. Remove a line to leave that field alone.
+4. Make the issue date field hidden or read-only on the form, so that competitors do not type in it.
+5. Decide whether competitors should still type their rating. RSForm! Pro checks required fields before it runs the script, so while the rating field is required a competitor has to type something, which the script then corrects. To let them leave it empty, make the rating field not required; a boat that is not on the list is then stored with no rating.
+6. Save, then send a test entry for a boat that is on the IRC list and check the e-mail.
+
+What it does:
+
+- When the IRC list has a boat with both that name and that sail number, and the class is an IRC one, the rating on the list replaces whatever was typed (the non-spinnaker rating for a non-spinnaker class) and the issue date is filled in, as "23 Jan 2026".
+- Otherwise the rating stays as typed and the issue date is left empty. That covers boats with no certificate yet, a mistyped name or sail number, and YTC boats.
+- A boat with two certificates gets its primary one.
+- These are the values at the moment the form is sent. They do not change if the certificate is reissued; the Race entries page always shows the up-to-date rating and issue date. With the script in place, "On form" on that page means "the rating when the boat entered".
+- The script cannot stop the form from being sent.
 
 ### Add the page to a menu
 
@@ -255,7 +291,8 @@ What the other system gets for each race: its name, date and rating deadline, an
 | A snapshot stays "Due" | No import has run since the deadline | Click **Import ratings now**, and check the scheduled task is running. |
 | Race entries page says the entry form has not been chosen | Entry form ID is empty | Step 7. |
 | Race entries page says no races are linked | No race has an entry form question | Step 7, "Link each race to its question". |
-| The question list on a race is empty | Wrong Entry form ID, or the form's race questions do not offer the answer set in "Answer that means entered" | Check both in Options → Entry form. |
+| The question list on a race is empty | Wrong Entry form ID (in the options, or typed in the race itself), or the form's race questions do not offer the answer set in "Answer that means entered" | Check the race's Entry form ID, then both settings in Options → Entry form. |
+| Boats that entered have dropped off a race | A race question was renamed on the form after they entered, or the race is linked to another form | Check the race's Entry form ID and question. After a rename, the boats have to send the form again. |
 | A boat shows "Not listed" | The name and sail number on the form match nothing on the list | Compare the form with the rating lookup page; the entrant may have mistyped the sail number or not yet have a certificate. |
 | A boat's Country/Flag is empty on the fleetsheet | Its country is not in the flag codes setting | Add a line for it in Options → YB fleetsheet. |
 | A boat is in no IRC class column | It has no rating, or no band starts low enough | Check the boat's rating; make the lowest band start at 0. |
@@ -272,7 +309,12 @@ What the other system gets for each race: its name, date and rating deadline, an
 
 ## Next season
 
-1. Put the new entry form's ID in **Options → Entry form** and check the field names, including the two on the **YB fleetsheet** tab.
-2. Add the new season's races and link each to its question.
-3. Check the IRC class bands on the **YB fleetsheet** tab against the new Notice of Race.
-4. Old races, their snapshots and their certificate choices can stay; they remain available in the rating lookup's "Ratings as at" list.
+Each season needs its own entry form. Do not reuse last season's form and do not clear its submissions: last season's races read their entries from it.
+
+1. In **Components → RSForm! Pro → Manage Forms**, duplicate last season's form and note the copy's ID. The questions can keep their names (`ISORA_Race_01` and so on); change the captions to the new programme.
+2. Put the copy's ID in **Options → Entry form → Entry form ID** and check the field names, including the two on the **YB fleetsheet** tab.
+3. Add the new season's races as new races and link each to its question. Do not edit last season's races into this season's: their frozen ratings and certificate choices belong to them.
+4. Check the IRC class bands on the **YB fleetsheet** tab against the new Notice of Race.
+5. Old races, their entry lists, their snapshots and their certificate choices stay as they were; the snapshots remain available in the rating lookup's "Ratings as at" list.
+
+The field names in the options (boat name, sail number and so on) apply to every form, so keep those names the same in the copy. If one is renamed, last season's lists lose that column.

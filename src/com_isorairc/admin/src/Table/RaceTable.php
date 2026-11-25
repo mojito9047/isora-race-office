@@ -37,6 +37,17 @@ class RaceTable extends Table
 
         $this->rating_deadline = $deadline->format('Y-m-d H:i:s');
 
-        return parent::store($updateNulls);
+        // A race on an entry form remembers which form: the one given, else the one in the options now.
+        // That way choosing next season's form in the options leaves this race's entries alone.
+        $formId = (int) ($this->form_id ?? 0);
+
+        if ($formId <= 0 && trim((string) ($this->entry_field ?? '')) !== '') {
+            $formId = (int) ComponentHelper::getParams('com_isorairc')->get('entry_form_id', 0);
+        }
+
+        $this->form_id = $formId > 0 ? $formId : null;
+
+        // Nulls are written so that an emptied form ID is really cleared.
+        return parent::store(true);
     }
 }

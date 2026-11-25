@@ -73,12 +73,12 @@
 			maxlength="5"
 		/>
 	</fieldset>
-	<fieldset name="entries" label="Entry form" description="The Race entries page reads the RSForm! Pro entry form directly. Choose the form here, then link each race to its question when editing the race.">
+	<fieldset name="entries" label="Entry form" description="The Race entries page reads the RSForm! Pro entry form directly. Choose the form here, then link each race to its question when editing the race. Each race remembers the form it was linked to, so for a new season: copy the form in RSForm! Pro, put the copy's ID here and add the new races. Last season's races keep reading last season's form.">
 		<field
 			name="entry_form_id"
 			type="number"
 			label="Entry form ID"
-			description="The ID of the entry form, shown in the ID column of Components - RSForm! Pro - Manage Forms. Leave empty to switch the Race entries page off."
+			description="The ID of this season's entry form, shown in the ID column of Components - RSForm! Pro - Manage Forms. Races are linked to this form when they are saved. Leave empty to switch the Race entries page off."
 			min="0"
 			step="1"
 			filter="integer"

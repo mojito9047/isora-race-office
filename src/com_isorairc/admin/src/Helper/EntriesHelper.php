@@ -64,10 +64,29 @@ class EntriesHelper
         return preg_match('#^https?://#i', $url) ? $url : '';
     }
 
-    /** The RSForm form that holds the entries, or 0 when not set. */
+    /**
+     * The RSForm form chosen in the options, or 0 when not set. New races are
+     * linked to this form; 0 switches the Race entries page off.
+     */
     public static function formId(): int
     {
         return (int) ComponentHelper::getParams('com_isorairc')->get('entry_form_id', 0);
+    }
+
+    /**
+     * The RSForm form that holds a race's entries: the one stored with the race,
+     * or the one in the options for a race that has none stored. 0 when the
+     * options have no form (the page is switched off).
+     */
+    public static function raceFormId(object $race): int
+    {
+        $default = self::formId();
+
+        if (!$default) {
+            return 0;
+        }
+
+        return (int) ($race->form_id ?? 0) ?: $default;
     }
 
     /** The answer on the entry form that means "entered for this race". */
@@ -99,11 +118,13 @@ class EntriesHelper
      * the "entered" answer), as field name => caption.
      * Empty when RSForm is not installed or no form is chosen.
      *
+     * @param int $formId The form to read; 0 for the one in the options
+     *
      * @return array<string, string>
      */
-    public static function raceFields(): array
+    public static function raceFields(int $formId = 0): array
     {
-        $formId = self::formId();
+        $formId = $formId > 0 ? $formId : self::formId();
 
         if (!$formId) {
             return [];
@@ -198,7 +219,7 @@ class EntriesHelper
      */
     public static function entries(object $race): array
     {
-        $formId = self::formId();
+        $formId = self::raceFormId($race);
 
         if (!$formId || empty($race->entry_field)) {
             return [];
@@ -270,6 +291,94 @@ class EntriesHelper
         self::addRatings($entries, $race);
 
         return $entries;
+    }
+
+    /**
+     * One boat's rating on the current list, found the way the Race entries
+     * page finds it: by boat name and sail number, in the list its class is
+     * scored under (a class starting "YTC" uses the YTC list, a non-spinnaker
+     * class the non-spinnaker rating).
+     *
+     * The answer has boat, sail, class, scheme, rating, rating_text,
+     * rating_status (ok|check|none|off), rating_note, cert_no, certificate,
+     * has_secondary and the IRC_DETAILS, as an entry from entries() does.
+     * A boat with two IRC certificates is given on its primary one.
+     */
+    public static function lookup(string $boat, string $sail, string $class = 'IRC'): object
+    {
+        $entry = (object) ['boat' => trim($boat), 'sail' => trim($sail), 'class' => trim($class)];
+
+        // Race 0 is no race: the current lists, and nobody's certificate choice.
+        self::addRatings([$entry], (object) ['id' => 0]);
+
+        return $entry;
+    }
+
+    /**
+     * For a script on the entry form: fill in the boat's IRC rating and the
+     * issue date of its IRC certificate from the current IRC list, in the
+     * answers being sent (RSForm's $_POST['form']), before they are stored.
+     *
+     * Only done when the list has a boat with both that name and that sail
+     * number and the class is an IRC one. Otherwise the rating is left as
+     * typed and the issue date is emptied. The boat name, sail number and
+     * class are read from the fields named in the options.
+     *
+     * Never stops the form: any problem leaves the answers alone.
+     *
+     * @param array $form    The answers, by field name; changed in place
+     * @param array $targets Field names to fill: 'rating' and 'issue_date'. Leave one out, or empty, to skip it.
+     *
+     * @return object|null What lookup() found, or null when nothing could be looked up
+     */
+    public static function fillFromIrcList(&$form, array $targets = ['rating' => 'Latest_IRC_TCC', 'issue_date' => 'IRCCertIssueDate']): ?object
+    {
+        if (!\is_array($form)) {
+            return null;
+        }
+
+        try {
+            $fields = self::fields();
+            $answer = static function (string $name) use ($form): string {
+                $value = $form[$name] ?? '';
+
+                // A question with choices arrives as a list of the ones ticked.
+                return trim((string) (\is_array($value) ? reset($value) : $value));
+            };
+
+            $ratingField = trim((string) ($targets['rating'] ?? ''));
+            $dateField   = trim((string) ($targets['issue_date'] ?? ''));
+
+            // A date somebody typed or left over is not the list's.
+            if ($dateField !== '') {
+                $form[$dateField] = '';
+            }
+
+            $boat = $answer($fields['boat']);
+            $sail = $answer($fields['sail']);
+
+            if ($boat === '' || $sail === '') {
+                return null;
+            }
+
+            $found = self::lookup($boat, $sail, $answer($fields['class']));
+
+            if ($found->scheme !== 'irc' || $found->rating_status !== 'ok' || $found->rating === null) {
+                return $found;
+            }
+
+            if ($ratingField !== '') {
+                $form[$ratingField] = $found->rating_text;
+            }
+
+            if ($dateField !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $found->issue_date)) {
+                $form[$dateField] = date_create((string) $found->issue_date, new \DateTimeZone('UTC'))->format('j M Y');
+            }
+
+            return $found;
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
     /**

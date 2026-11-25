@@ -64,6 +64,7 @@ CREATE TABLE IF NOT EXISTS `#__isorairc_races` (
   `deadline_days` smallint unsigned NOT NULL DEFAULT 7,
   `rating_deadline` datetime NOT NULL,
   `entry_field` varchar(190) DEFAULT NULL,
+  `form_id` int unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_deadline` (`rating_deadline`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 DEFAULT COLLATE=utf8mb4_unicode_ci;

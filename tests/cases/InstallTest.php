@@ -61,7 +61,7 @@ class InstallTest extends TestCase
     {
         $columns = array_keys(Env::db()->getTableColumns('#__isorairc_races'));
 
-        foreach (['id', 'name', 'race_date', 'deadline_days', 'rating_deadline', 'entry_field'] as $column) {
+        foreach (['id', 'name', 'race_date', 'deadline_days', 'rating_deadline', 'entry_field', 'form_id'] as $column) {
             $this->assertTrue(\in_array($column, $columns, true), 'races.' . $column);
         }
     }
@@ -120,5 +120,89 @@ class InstallTest extends TestCase
     {
         $db = Env::db();
         $this->assertCount(1, Env::rows('#__assets', $db->quoteName('name') . ' = ' . $db->quote('com_isorairc')), 'Permission records');
+    }
+
+    // ------------------------------------------------------------ updating to 1.9.0
+
+    /** The package's install script, told which version was installed before the update. */
+    private function updateFrom(string $before): void
+    {
+        if (!class_exists('Pkg_IsoraircInstallerScript', false)) {
+            require \dirname(__DIR__, 2) . '/src/pkg_isorairc/script.php';
+        }
+
+        $script   = new \Pkg_IsoraircInstallerScript();
+        $property = new \ReflectionProperty($script, 'before');
+        $property->setAccessible(true);
+        $property->setValue($script, $before);
+        $script->postflight('update', null);
+    }
+
+    public function testUpdatingFromBefore190LinksExistingRacesToTheFormInTheOptions(): void
+    {
+        Env::reset();
+
+        try {
+            $linked   = Env::addRace('Linked', '2027-05-01', '2027-04-24 22:59:00', 'Race_1');
+            $unlinked = Env::addRace('Not on the form', '2027-05-08', '2027-05-01 22:59:00');
+            $blank    = Env::addRace('Blank question', '2027-05-15', '2027-05-08 22:59:00', '');
+            $other    = Env::addRace('Already on another form', '2026-05-02', '2026-04-25 22:59:00', 'Race_1', 7, 12);
+
+            $this->updateFrom('1.8.0');
+
+            $this->assertSame(Env::FORM_ID, (int) Env::race($linked)->form_id);
+            $this->assertTrue(Env::race($unlinked)->form_id === null, 'A race that is not on the form is left alone');
+            $this->assertTrue(Env::race($blank)->form_id === null, 'So is one with an empty question');
+            $this->assertSame(12, (int) Env::race($other)->form_id);
+        } finally {
+            Env::reset();
+        }
+    }
+
+    public function testLaterUpdatesDoNotLinkRacesAgain(): void
+    {
+        Env::reset();
+
+        try {
+            $race = Env::addRace('Left to follow the options', '2027-05-01', '2027-04-24 22:59:00', 'Race_1');
+
+            $this->updateFrom('1.9.0');
+            $this->assertTrue(Env::race($race)->form_id === null, 'From 1.9.0');
+
+            $this->updateFrom('');
+            $this->assertTrue(Env::race($race)->form_id === null, 'Version before unknown');
+        } finally {
+            Env::reset();
+        }
+    }
+
+    public function testUpdateWithNoFormInTheOptionsLinksNothing(): void
+    {
+        Env::reset();
+
+        try {
+            $race = Env::addRace('Linked', '2027-05-01', '2027-04-24 22:59:00', 'Race_1');
+            Env::setParams(['entry_form_id' => 0]);
+
+            $this->updateFrom('1.8.0');
+
+            $this->assertTrue(Env::race($race)->form_id === null);
+        } finally {
+            Env::reset();
+        }
+    }
+
+    public function testInstallScriptReadsTheVersionInstalledBeforeTheUpdate(): void
+    {
+        if (!class_exists('Pkg_IsoraircInstallerScript', false)) {
+            require \dirname(__DIR__, 2) . '/src/pkg_isorairc/script.php';
+        }
+
+        $script = new \Pkg_IsoraircInstallerScript();
+        $script->preflight('update', null);
+        $property = new \ReflectionProperty($script, 'before');
+        $property->setAccessible(true);
+
+        $this->assertSame($this->version(), $property->getValue($script));
     }
 }

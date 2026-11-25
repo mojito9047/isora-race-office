@@ -359,4 +359,85 @@ class AdminTest extends SiteTest
 
         $this->admin()->get('/administrator/index.php?option=com_config&task=component.cancel&component=com_isorairc');
     }
+
+    // ------------------------------------------------------------ one entry form per season (1.9.0)
+
+    public function testRaceFormHasAnEntryFormIdThatShowsTheOneFromTheOptions(): void
+    {
+        Env::standardForm();
+        $form = $this->admin()->get('/administrator/index.php?option=com_isorairc&task=race.add');
+
+        $this->assertNoPhpErrors($form);
+        $this->assertContains('Entry form ID', $form->text());
+        $this->assertMatches('/<input[^>]*name="jform\[form_id\]"[^>]*>/', $form->body);
+        preg_match('/<input[^>]*name="jform\[form_id\]"[^>]*>/', $form->body, $input);
+        $this->assertContains('value=""', $input[0], 'Empty for a new race');
+        $this->assertContains('placeholder="' . Env::FORM_ID . '"', $input[0], 'The form in the options is shown in grey');
+        $this->assertContains('race.reload', $input[0], 'Changing it reloads the question list');
+        $this->admin()->get('/administrator/index.php?option=com_isorairc&task=race.cancel');
+    }
+
+    public function testSavingALinkedRaceStoresTheFormFromTheOptions(): void
+    {
+        $this->save(['name' => 'Linked', 'race_date' => '2027-06-12', 'deadline_days' => 7, 'form_id' => '', 'entry_field' => 'Race_1']);
+        $race = $this->onlyRace();
+
+        $this->assertSame(Env::FORM_ID, (int) $race->form_id);
+
+        // Next season's form is chosen in the options; saving this race again does not move it.
+        Env::setParams(['entry_form_id' => 14]);
+        $this->save(['name' => 'Linked', 'race_date' => '2027-06-12', 'deadline_days' => 7, 'form_id' => (string) Env::FORM_ID, 'entry_field' => 'Race_1'], (int) $race->id);
+
+        $this->assertSame(Env::FORM_ID, (int) $this->onlyRace()->form_id);
+        $this->assertContains('Race_1 Form ' . Env::FORM_ID, $this->list()->text(), 'The list says which form');
+    }
+
+    public function testRaceThatIsNotOnTheEntryFormStoresNoForm(): void
+    {
+        $this->save(['name' => 'Not linked', 'race_date' => '2027-06-12', 'deadline_days' => 7, 'form_id' => '', 'entry_field' => '']);
+
+        $this->assertTrue($this->onlyRace()->form_id === null, 'form_id is empty');
+        $this->assertNotContains('Form ' . Env::FORM_ID, $this->list()->text());
+    }
+
+    public function testRaceCanBeLinkedToAnotherSeasonsForm(): void
+    {
+        Env::standardForm();
+        Env::question('Race_Old', 'Last year - race 1', 'radioGroup', "Yes\nNo", 12);
+        $this->save(['name' => 'Last year', 'race_date' => '2026-06-13', 'deadline_days' => 7, 'form_id' => '12', 'entry_field' => 'Race_Old']);
+        $race = $this->onlyRace();
+
+        $this->assertSame(12, (int) $race->form_id);
+        $this->assertSame('Race_Old', $race->entry_field);
+
+        // Its question list is that form's, not the one in the options.
+        $form = $this->admin()->get('/administrator/index.php?option=com_isorairc&task=race.edit&id=' . (int) $race->id);
+        $this->assertContains('Last year - race 1 (Race_Old)', $form->body);
+        $this->assertNotContains('(Race_1)', $form->body);
+        $this->admin()->get('/administrator/index.php?option=com_isorairc&task=race.cancel&id=' . (int) $race->id);
+
+        // Emptying the form ID puts the race back on the form in the options.
+        $this->save(['name' => 'Last year', 'race_date' => '2026-06-13', 'deadline_days' => 7, 'form_id' => '', 'entry_field' => 'Race_1'], (int) $race->id);
+        $this->assertSame(Env::FORM_ID, (int) $this->onlyRace()->form_id);
+    }
+
+    public function testChangingTheFormIdReloadsTheQuestionList(): void
+    {
+        Env::standardForm();
+        Env::question('Race_Old', 'Last year - race 1', 'radioGroup', "Yes\nNo", 12);
+        $form = $this->admin()->get('/administrator/index.php?option=com_isorairc&task=race.add');
+
+        // What the browser does when the Entry form ID is changed: nothing is saved, the form comes back.
+        $page = $this->admin()->post('/administrator/index.php?option=com_isorairc&layout=edit&id=0', [
+            'task' => 'race.reload', 'jform' => ['id' => 0, 'name' => 'Half typed', 'race_date' => '', 'deadline_days' => 7, 'form_id' => '12', 'entry_field' => ''],
+            $this->admin()->token($form->body) => 1,
+        ]);
+
+        $this->assertNoPhpErrors($page, 'After reloading');
+        $this->assertCount(0, Env::rows('#__isorairc_races'), 'Nothing saved');
+        $this->assertContains('Last year - race 1 (Race_Old)', $page->body);
+        $this->assertNotContains('(Race_1)', $page->body);
+        $this->assertContains('value="Half typed"', $page->body, 'What was typed is kept');
+        $this->admin()->get('/administrator/index.php?option=com_isorairc&task=race.cancel');
+    }
 }

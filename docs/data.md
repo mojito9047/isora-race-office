@@ -1,6 +1,6 @@
 # ISORA Race Office: the stored rating data
 
-What ISORA Race Office keeps in the website's database, what each value means, and how another part of the Joomla site (a module, a plugin, another component, a script in a form) can read it. Written for version 1.8.0.
+What ISORA Race Office keeps in the website's database, what each value means, and how another part of the Joomla site (a module, a plugin, another component, a script in a form) can read it. Written for version 1.9.0.
 
 For a system outside the website, use the [API](api.md) instead.
 
@@ -77,6 +77,7 @@ Things to know before using these rows:
 | `deadline_days` | How many days before the race the ratings are frozen |
 | `rating_deadline` | The moment the ratings are frozen, in UTC |
 | `entry_field` | The name of the race's question on the entry form, or empty when the race is not linked to the form |
+| `form_id` | The ID of the RSForm! Pro form the race's entries are read from. Filled in when a linked race is saved. Empty for a race that is not linked; a linked race with it empty reads the form in the options. |
 
 `#__isorairc_race_snapshots`
 
@@ -165,25 +166,40 @@ The ratings are the current ones before the race's rating deadline and the froze
 
 ### One boat's current rating
 
-There is no helper for a single boat outside a race, so this reads the table. It finds a boat by sail number, ignoring spaces, hyphens and capitals:
+`EntriesHelper::lookup()` finds one boat on the current list the way the Race entries page does: by boat name and sail number, in the list its class is scored under.
 
 ```php
-use Joomla\CMS\Factory;
+$found = EntriesHelper::lookup('Mojito', 'GBR 4822R', 'IRC');   // the class is optional; IRC when left out
 
-$db   = Factory::getContainer()->get('DatabaseDriver');
-$sail = strtoupper(preg_replace('/[\s-]+/', '', $typedSailNumber));
-
-$query = $db->getQuery(true)
-    ->select($db->quoteName(['boat_name', 'sail_no', 'tcc', 'non_spi_tcc', 'cert_no', 'issue_date', 'crew']))
-    ->from($db->quoteName('#__isorairc_ratings'))
-    ->where($db->quoteName('scheme') . ' = ' . $db->quote('irc'))
-    ->where('UPPER(REPLACE(REPLACE(' . $db->quoteName('sail_no') . ", ' ', ''), '-', '')) = " . $db->quote($sail))
-    ->order($db->quoteName('secondary') . ' IS NOT NULL');   // primary certificate first
-
-$boat = $db->setQuery($query, 0, 1)->loadObject();          // null when the boat is not on the list
+if ($found->rating_status === 'ok') {
+    echo $found->rating_text, ' issued ', $found->issue_date;   // "1.084 issued 2026-01-23"
+}
 ```
 
-For the rating frozen for a race, read `#__isorairc_snapshot_ratings` and add `->where($db->quoteName('race_id') . ' = ' . (int) $raceId)`.
+The answer has the same values as an entry (above): `scheme`, `rating`, `rating_text`, `rating_status`, `rating_note`, `cert_no`, `issue_date`, `crew` and the rest. Trust the rating only when `rating_status` is `ok`; `check` means only the name or only the sail number matched. A class starting "YTC" is looked up in the YTC list, and a non-spinnaker class gets the non-spinnaker rating. A boat with two IRC certificates is given on its primary one. It is always the current list, never a race's frozen one.
+
+For the rating frozen for a race, read `#__isorairc_snapshot_ratings` with `race_id` set to the race, or use `EntriesHelper::entries()` for that race.
+
+### Filling in the entry form
+
+`EntriesHelper::fillFromIrcList()` is made for a script on the RSForm! Pro entry form. It puts the boat's IRC rating and the issue date of its certificate into the answers as the form is sent, before they are stored, so they appear in the confirmation e-mail and on the submission. The script, for the form's **Script called on form process** box:
+
+```php
+// ISORA Race Office: fill in the IRC rating and the certificate issue date from the IRC list.
+if (class_exists('\\Isora\\Component\\Isorairc\\Administrator\\Helper\\EntriesHelper')) {
+    \Isora\Component\Isorairc\Administrator\Helper\EntriesHelper::fillFromIrcList($_POST['form'], [
+        'rating'     => 'Latest_IRC_TCC',
+        'issue_date' => 'IRCCertIssueDate',
+    ]);
+}
+```
+
+- It fills the fields in only when the list has a boat with both that name and that sail number, and the class is an IRC one. Otherwise the rating stays as the competitor typed it and the issue date is left empty.
+- The issue date is written as "23 Jan 2026".
+- The boat name, sail number and class are read from the fields named in the extension's options.
+- Leave out `'rating'` or `'issue_date'` to fill in only the other, or give another field's name to put the value there.
+- It cannot stop the form: if anything goes wrong, or the extension is removed, the answers are left as sent.
+- The values are those on the list at the moment the form is sent. They are not updated when a certificate is reissued; the Race entries page always has the up-to-date ones.
 
 To print a rating the way its system publishes it (three decimals for IRC, none for YTC):
 
@@ -203,7 +219,8 @@ echo $last ? $last->imported_at . ' UTC, ' . $last->row_count . ' boats' : 'Not 
 
 | Idea | How |
 |---|---|
-| Fill in or check the TCC a competitor types on the entry form | In a script on the RSForm! Pro form, look the boat up by sail number as above and compare or fill in the value |
+| Fill in the TCC and certificate issue date on the entry form | `EntriesHelper::fillFromIrcList()` in a script on the RSForm! Pro form, as above |
+| Show a boat's rating next to its name anywhere on the site | `EntriesHelper::lookup()` |
 | An entry list or "boats entered" count on the home page | A module that calls `EntriesHelper::races()` and `EntriesHelper::entries()` and prints only the public values |
 | Results or a provisional class split | `EntriesHelper::entries()` for the race gives every boat's rating as frozen at the deadline |
 | A crew limit check | `crew` on the boat's IRC row, or on its entry |

@@ -561,4 +561,182 @@ class EntriesTest extends SiteTest
         $this->assertSame("L'Étoile \"Bleue\" <3", $entry->boat);
         $this->assertSame("Seán O'Brien", $entry->contact);
     }
+
+    // ------------------------------------------------------------ one entry form per season (1.9.0)
+
+    public function testRaceReadsTheEntryFormStoredWithIt(): void
+    {
+        $lastYear = Env::addRace('Last year, race 1', '2026-05-02', '2026-04-25 22:59:00', 'Race_1', 7, 12);
+        Env::submit(Env::boat(['Boat_Name' => 'Old Salt', 'Sail_Number' => '1']), '2025-10-01 10:00:00', 12);
+        Env::submit(Env::boat(['Boat_Name' => 'Newcomer', 'Sail_Number' => '2']));
+
+        $this->assertSame(['Old Salt'], $this->names($lastYear));
+        $this->assertSame(['Newcomer'], $this->names(), 'A race without a stored form reads the form in the options');
+        $this->assertSame(12, EntriesHelper::raceFormId(Env::race($lastYear)));
+        $this->assertSame(Env::FORM_ID, EntriesHelper::raceFormId(Env::race($this->race)));
+    }
+
+    public function testSameQuestionOnNextSeasonsFormDoesNotChangeLastSeasonsList(): void
+    {
+        // The form was copied for the new season, so both forms have a question called Race_1.
+        $lastYear = Env::addRace('Last year, race 1', '2026-05-02', '2026-04-25 22:59:00', 'Race_1', 7, 12);
+        $thisYear = Env::addRace('This year, race 1', '2027-05-01', '2027-04-24 22:59:00', 'Race_1', 7, Env::FORM_ID);
+
+        Env::submit(Env::boat(['Boat_Name' => 'Both Years', 'Sail_Number' => '1']), '2025-10-01 10:00:00', 12);
+        Env::submit(Env::boat(['Boat_Name' => 'Both Years', 'Sail_Number' => '1']), '2026-10-01 10:00:00');
+        Env::submit(Env::boat(['Boat_Name' => 'Stayed Home', 'Sail_Number' => '2']), '2025-10-01 10:00:00', 12);
+        Env::submit(Env::boat(['Boat_Name' => 'Stayed Home', 'Sail_Number' => '2', 'Race_1' => 'No']), '2026-10-01 10:00:00');
+
+        $this->assertSame(['Both Years', 'Stayed Home'], $this->names($lastYear), "This year's No does not withdraw the boat from last year's race");
+        $this->assertSame(['Both Years'], $this->names($thisYear), "Last year's Yes does not enter the boat this year");
+    }
+
+    public function testChoosingNextSeasonsFormInTheOptionsLeavesLinkedRacesAlone(): void
+    {
+        $linked = Env::addRace('Linked', '2027-05-08', '2027-05-01 22:59:00', 'Race_1', 7, Env::FORM_ID);
+        Env::submit(Env::boat(['Boat_Name' => 'This Season']));
+        Env::submit(Env::boat(['Boat_Name' => 'Next Season']), '2027-10-01 10:00:00', 14);
+        Env::setParams(['entry_form_id' => 14]);
+
+        $this->assertSame(['This Season'], $this->names($linked));
+        $this->assertSame(['Next Season'], $this->names(), 'A race without a stored form follows the options');
+    }
+
+    public function testEmptyFormInTheOptionsSwitchesOffLinkedRacesToo(): void
+    {
+        $linked = Env::addRace('Linked', '2027-05-08', '2027-05-01 22:59:00', 'Race_1', 7, Env::FORM_ID);
+        Env::submit(Env::boat());
+        Env::setParams(['entry_form_id' => 0]);
+
+        $this->assertSame(0, EntriesHelper::raceFormId(Env::race($linked)));
+        $this->assertSame([], $this->names($linked));
+    }
+
+    public function testRaceQuestionsCanBeReadForAGivenForm(): void
+    {
+        Env::question('Race_Old', 'Last year', 'radioGroup', "Yes\nNo", 12);
+
+        $this->assertSame(['Race_Old' => 'Last year'], EntriesHelper::raceFields(12));
+        $this->assertSame(['Race_1', 'Race_2'], array_keys(EntriesHelper::raceFields(0)), 'No form given: the one in the options');
+    }
+
+    // ------------------------------------------------------------ one boat's rating, and filling in the entry form (1.9.0)
+
+    public function testOneBoatCanBeLookedUpOnTheCurrentList(): void
+    {
+        Env::addRating('irc', 'Sea Breeze', 'IRL1234', 1.045, 1.021, ['issue_date' => '2026-03-15', 'crew' => 9, 'cert_no' => '555']);
+        $found = EntriesHelper::lookup(' sea breeze ', 'irl 1234');
+
+        $this->assertSame(['irc', 'ok', '1.045', '2026-03-15', '9', '555', 'primary'], [
+            $found->scheme, $found->rating_status, $found->rating_text, $found->issue_date, $found->crew, $found->cert_no, $found->certificate,
+        ]);
+        $this->assertSame('1.021', EntriesHelper::lookup('Sea Breeze', 'IRL1234', 'IRC - Non Spinnaker (for the full season)')->rating_text, 'Non-spinnaker class');
+    }
+
+    public function testLookupSaysHowWellTheBoatMatched(): void
+    {
+        Env::addRating('irc', 'Sea Breeze', 'IRL1234', 1.045);
+        Env::addRating('ytc', 'Little Wing', 'IRL77', 0.912);
+
+        $this->assertSame('check', EntriesHelper::lookup('Sea Breeze', 'IRL 9999')->rating_status, 'Name only');
+        $this->assertSame('check', EntriesHelper::lookup('Sea Breese', 'IRL 1234')->rating_status, 'Sail number only');
+
+        $missing = EntriesHelper::lookup('Nobody', 'IRL 1');
+        $this->assertSame(['none', null, '', 'Not found in the IRC list'], [$missing->rating_status, $missing->rating, $missing->rating_text, $missing->rating_note]);
+
+        $ytc = EntriesHelper::lookup('Little Wing', 'IRL 77', 'YTC- For Coastal Races only');
+        $this->assertSame(['ytc', 'ok', ''], [$ytc->scheme, $ytc->rating_status, $ytc->issue_date]);
+        $this->assertSame('none', EntriesHelper::lookup('Little Wing', 'IRL 77', 'IRC')->rating_status, 'A YTC boat is not on the IRC list');
+    }
+
+    public function testLookupUsesThePrimaryCertificateAndIgnoresAnyRacesChoiceOrFrozenList(): void
+    {
+        $this->boatWithTwoCertificates();
+        $boat = $this->entries()[0];
+        EntriesHelper::setCertificate($this->race, $boat->boat, $boat->sail, 'secondary', 'test');
+        Env::addRating('irc', $boat->boat, str_replace(' ', '', $boat->sail), 0.900, null, [], $this->race);
+        Env::freeze($this->race, 'irc');
+
+        $found = EntriesHelper::lookup($boat->boat, $boat->sail);
+
+        $this->assertSame(['1.084', 'primary'], [$found->rating_text, $found->certificate]);
+        $this->assertTrue($found->has_secondary);
+    }
+
+    public function testEntryFormIsFilledInFromTheIrcList(): void
+    {
+        Env::addRating('irc', 'Sea Breeze', 'IRL1234', 1.045, null, ['issue_date' => '2026-03-05']);
+        $form  = Env::boat(['Boat_Name' => 'Sea Breeze', 'Sail_Number' => 'IRL 1234', 'Latest_IRC_TCC' => '1.039', 'IRCCertIssueDate' => 'typed by somebody']);
+        $found = EntriesHelper::fillFromIrcList($form);
+
+        $this->assertSame('1.045', $form['Latest_IRC_TCC'], 'The rating on the list replaces the one typed');
+        $this->assertSame('5 Mar 2026', $form['IRCCertIssueDate']);
+        $this->assertSame('ok', $found->rating_status);
+        $this->assertSame('Pat Skipper', $form['FullName'], 'Nothing else is touched');
+        $this->assertCount(\count(Env::boat()) + 1, $form);
+    }
+
+    public function testEntryFormKeepsTheTypedRatingWhenTheBoatIsNotSurelyOnTheList(): void
+    {
+        Env::addRating('irc', 'Sea Breeze', 'IRL1234', 1.045, null, ['issue_date' => '2026-03-05']);
+        Env::addRating('ytc', 'Little Wing', 'IRL77', 0.912);
+
+        $cases = [
+            'Not on the list'       => ['Boat_Name' => 'Nobody', 'Sail_Number' => 'IRL 1'],
+            'Only the name matches' => ['Boat_Name' => 'Sea Breeze', 'Sail_Number' => 'IRL 9999'],
+            'Only the sail matches' => ['Boat_Name' => 'Sea Breese', 'Sail_Number' => 'IRL 1234'],
+            'A YTC class'           => ['Boat_Name' => 'Little Wing', 'Sail_Number' => 'IRL 77', 'Class_Racing' => 'YTC- For Coastal Races only'],
+            'No sail number'        => ['Boat_Name' => 'Sea Breeze', 'Sail_Number' => ''],
+        ];
+
+        foreach ($cases as $what => $answers) {
+            $form = Env::boat($answers + ['Latest_IRC_TCC' => '1.039', 'IRCCertIssueDate' => 'typed by somebody']);
+            EntriesHelper::fillFromIrcList($form);
+
+            $this->assertSame('1.039', $form['Latest_IRC_TCC'], $what . ': the rating stays as typed');
+            $this->assertSame('', $form['IRCCertIssueDate'], $what . ': no issue date');
+        }
+    }
+
+    public function testEntryFormFillUsesTheNonSpinnakerRatingForANonSpinnakerClass(): void
+    {
+        Env::addRating('irc', 'Sea Breeze', 'IRL1234', 1.045, 1.021, ['issue_date' => '2026-03-05']);
+        // RSForm sends a question with choices as a list.
+        $form = Env::boat(['Boat_Name' => 'Sea Breeze', 'Sail_Number' => 'IRL 1234', 'Class_Racing' => ['IRC - Non Spinnaker (for the full season)']]);
+        EntriesHelper::fillFromIrcList($form);
+
+        $this->assertSame('1.021', $form['Latest_IRC_TCC']);
+    }
+
+    public function testEntryFormFillCanBeToldWhichFieldsToUse(): void
+    {
+        Env::addRating('irc', 'Sea Breeze', 'IRL1234', 1.045, null, ['issue_date' => '2026-03-05']);
+        $boat = Env::boat(['Boat_Name' => 'Sea Breeze', 'Sail_Number' => 'IRL 1234', 'Latest_IRC_TCC' => '1.039']);
+
+        $form = $boat;
+        EntriesHelper::fillFromIrcList($form, ['issue_date' => 'Cert_Date']);
+        $this->assertSame(['1.039', '5 Mar 2026'], [$form['Latest_IRC_TCC'], $form['Cert_Date']], 'Only the date');
+
+        $form = $boat;
+        EntriesHelper::fillFromIrcList($form, ['rating' => 'List_TCC', 'issue_date' => '']);
+        $this->assertSame(['1.039', '1.045'], [$form['Latest_IRC_TCC'], $form['List_TCC']], 'The rating in a field of its own');
+        $this->assertFalse(isset($form['IRCCertIssueDate']));
+
+        // The boat's own fields are the ones named in the options.
+        Env::setParams(['entry_boat_field' => 'Yacht', 'entry_sail_field' => 'Sail']);
+        $form = ['Yacht' => 'Sea Breeze', 'Sail' => 'IRL 1234', 'Class_Racing' => 'IRC'];
+        EntriesHelper::fillFromIrcList($form);
+        $this->assertSame('1.045', $form['Latest_IRC_TCC']);
+    }
+
+    public function testEntryFormFillNeverStopsTheForm(): void
+    {
+        $nothing = null;
+        $this->assertTrue(EntriesHelper::fillFromIrcList($nothing) === null, 'No answers at all');
+
+        Env::setParams(['irc_enabled' => 0]);
+        $form = Env::boat(['Latest_IRC_TCC' => '1.039']);
+        EntriesHelper::fillFromIrcList($form);
+        $this->assertSame('1.039', $form['Latest_IRC_TCC'], 'IRC switched off');
+    }
 }

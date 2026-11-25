@@ -2,6 +2,16 @@
 
 Changes to ISORA Race Office (Joomla package `pkg_isorairc`), newest first.
 
+## 1.9.0 (25 November 2026)
+
+- New: **each race remembers which entry form it reads.** Until now every race read the one form set in the options, so reusing the form (or the same question names) for a new season would have mixed the two seasons' entries: last season's boats listed in this season's races, and last season's lists changing as boats sent this season's form. Now a new season gets its own copy of the form in RSForm! Pro, its ID goes in the options, and last season's races go on reading last season's form. The question names can stay the same in the copy.
+- A race has a new field, **Entry form ID**, above **Entry form question**. Leave it empty and it is filled in with the form from the options when the race is saved. Changing it reloads the question list for that form. The race list shows the form under the question.
+- The form in the options (**Entry form ID**) is now the form that *new* races are linked to. Emptying it still switches the Race entries page off.
+- On updating, the races already linked to a question are linked to the form currently in the options, so nothing changes on the site.
+- Nothing changes on the Race entries page, in the downloads or in the API.
+- New for the entry form: a short script (in the admin guide, step 7) makes the form fill in the boat's **IRC rating** and the **issue date of its IRC certificate** from the IRC list as it is sent, so both are right in the confirmation e-mail and on the submission. It only does so when the list has a boat with both that name and that sail number; otherwise the rating stays as typed and the date is left empty. The values are those at the time of entry.
+- New for other code on the site: `EntriesHelper::lookup()` gives one boat's current rating and certificate details, matched the way the Race entries page matches. See `docs/data.md`.
+
 ## 1.8.0 (23 November 2026)
 
 - Race entries page: the Rating column is tidier. Each boat now has one link under its rating, **Details**, which opens a window holding everything that used to be stacked in the table: the certificate values (the former IRC data window), which certificate is in use, the rating typed on the entry form, the **Use secondary certificate** / **Use primary certificate** button, and the link to RORC's boat data. Nothing has been removed.

@@ -239,11 +239,11 @@ class Env
      *
      * @return int The race's ID
      */
-    public static function addRace(string $name, string $raceDate, string $deadlineUtc, ?string $entryField = null, int $days = 7): int
+    public static function addRace(string $name, string $raceDate, string $deadlineUtc, ?string $entryField = null, int $days = 7, ?int $formId = null): int
     {
         $race = (object) [
             'name' => $name, 'race_date' => $raceDate, 'deadline_days' => $days,
-            'rating_deadline' => $deadlineUtc, 'entry_field' => $entryField,
+            'rating_deadline' => $deadlineUtc, 'entry_field' => $entryField, 'form_id' => $formId,
         ];
         self::db()->insertObject('#__isorairc_races', $race, 'id');
 

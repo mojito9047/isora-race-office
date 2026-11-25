@@ -29,12 +29,17 @@ class RaceModel extends AdminModel
             (string) (int) ComponentHelper::getParams('com_isorairc')->get('deadline_days', 7)
         );
 
-        // Offer the yes/no questions of the entry form chosen in the options.
+        // New races are linked to the entry form chosen in the options.
+        $default = EntriesHelper::formId();
+        $form->setFieldAttribute('form_id', 'hint', $default ? (string) $default : '');
+
+        // Offer the yes/no questions of the race's entry form.
         $field = $form->getFieldXml('entry_field');
 
         if ($field) {
             $current = (string) $form->getValue('entry_field');
-            $names   = EntriesHelper::raceFields();
+            $formId  = (int) (\is_array($data) && isset($data['form_id']) ? $data['form_id'] : $form->getValue('form_id'));
+            $names   = EntriesHelper::raceFields($formId);
 
             if ($current !== '' && !isset($names[$current])) {
                 $names[$current] = $current;

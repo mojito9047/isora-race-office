@@ -59,7 +59,12 @@ $now    = gmdate('Y-m-d H:i:s');
 							<?php echo HTMLHelper::_('date', $item->rating_deadline, $format); ?>
 							<div class="small text-muted"><?php echo (int) $item->deadline_days; ?> days before the race</div>
 						</td>
-						<td><?php echo $this->escape((string) ($item->entry_field ?? '')); ?></td>
+						<td>
+							<?php echo $this->escape((string) ($item->entry_field ?? '')); ?>
+							<?php if ((string) ($item->entry_field ?? '') !== '' && (int) ($item->form_id ?? 0) > 0) : ?>
+								<div class="small text-muted">Form <?php echo (int) $item->form_id; ?></div>
+							<?php endif; ?>
+						</td>
 						<td>
 							<?php foreach ($this->systems as $scheme => $system) : ?>
 								<?php $snapshot = $this->snapshots[(int) $item->id][$scheme] ?? null; ?>

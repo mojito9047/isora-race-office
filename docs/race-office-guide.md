@@ -1,6 +1,6 @@
 # ISORA Race Office: guide for race organisers
 
-How to use the Race entries page on the ISORA website in the run-up to a race: checking the entries and their ratings, changing a boat's certificate, and downloading the entry list and the YB fleetsheet. Written for version 1.8.0.
+How to use the Race entries page on the ISORA website in the run-up to a race: checking the entries and their ratings, changing a boat's certificate, and downloading the entry list and the YB fleetsheet. Written for version 1.9.0.
 
 Setting the extension up (races, the entry form, permissions) is in the [admin guide](admin-guide.md).
 
@@ -42,7 +42,7 @@ The class decides which rating is shown: a class starting "YTC" uses the YTC lis
 | A grey tag, **2 certs: primary** | The boat has two IRC certificates and is on its primary one for this race (see below). | Nothing. |
 | An orange tag, **2 certs: secondary** | The boat has two IRC certificates and is on its secondary one for this race. | Nothing. |
 | "Secondary certificate chosen, but the list has none for this boat" | The secondary was chosen, but the list no longer has one. The primary rating is shown. | Check with the boat, or click **Use primary certificate** to clear the note. |
-| "On form: …" | The rating the competitor typed on the entry form differs from the one on the list. It is for comparison only and is never used. When the two agree, this line is left out. | Usually nothing: the certificate has been reissued since the form was sent. Ask the boat if the difference is large. |
+| "On form: …" | The rating the competitor typed on the entry form differs from the one on the list. It is for comparison only and is never used. When the two agree, this line is left out. | Usually nothing: the certificate has been reissued since the form was sent. (If the form fills the rating in from the list, this is the rating when the boat entered.) Ask the boat if the difference is large. |
 
 Next to the orange buttons the page says how many entries need their rating checked.
 
